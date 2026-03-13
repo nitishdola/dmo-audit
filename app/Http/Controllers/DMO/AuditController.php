@@ -27,7 +27,12 @@ class AuditController extends Controller
 
         $audits = $query->latest()->paginate(1000); 
 
-        return view('dmo.audits.telephonic.telephonic', compact('audits', 'status'));
+        $completed = PmjayAudit::where('assigned_to', auth()->id())->where('audit_type', 'telephonic')->where('status', 'completed')->count();
+        $pending = PmjayAudit::where('assigned_to', auth()->id())->where('audit_type', 'telephonic')->where('status', 'pending')->count();
+        $all = PmjayAudit::where('assigned_to', auth()->id())->where('audit_type', 'telephonic')->count();
+
+
+        return view('dmo.audits.telephonic.telephonic', compact('audits', 'status', 'completed', 'pending', 'all'));
     }
 
     public function telephonicAuditForm(Request $request, $id)

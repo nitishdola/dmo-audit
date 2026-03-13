@@ -37,6 +37,11 @@ return [
 
     'google_maps' => [
         'key' => 'AIzaSyAafTnw0behOkr6Xnm_f5p4E-ot9tCZpdM'
-    ]
+    ],
+
+    'google_cloud' => [
+        'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
+        'key_file'   => env('GOOGLE_CLOUD_KEY_FILE'), // absolute path to JSON key
+    ],
 
 ];

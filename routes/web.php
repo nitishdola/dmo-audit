@@ -8,6 +8,8 @@ use App\Http\Controllers\Admin\PmjayController;
 use App\Http\Controllers\Admin\DmoDistrictController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\DMO\AuditController;
+use App\Http\Controllers\DMO\VisionController;
+use App\Http\Controllers\DMO\LiveAuditController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -33,9 +35,7 @@ Route::middleware('guest')->prefix('auth')->name('auth.')->group(function () {
 
 // ─── Logout ───────────────────────────────────────────────────────────────────
 
-Route::post('logout', [AuthController::class, 'logout'])
-     ->middleware('auth')
-     ->name('auth.logout');
+
 Route::get('logout', [AuthController::class, 'logout'])
      ->middleware('auth')
      ->name('auth.logout');
@@ -69,7 +69,7 @@ Route::middleware(['auth', 'role:admin'])
           Route::post('/generate-audits', [AdminController::class, 'generateAudits']);
      });
 
-     
+
 
 // ─── DMO Routes ───────────────────────────────────────────────────────────────
 
@@ -78,10 +78,14 @@ Route::middleware(['auth', 'role:dmo'])
      ->name('dmo.')
      ->group(function () {
           Route::get('dashboard', [DmoDashboardController::class, 'index'])->name('dashboard');
-
           Route::prefix('audits')
           ->name('audits.')
           ->group(function () {
+               Route::post('/validate-photo', [VisionController::class, 'validatePhoto'])
+                    ->name('validate.photo');
+
+               Route::post('/validate-bed-photo', [VisionController::class, 'validateBedPhoto'])
+                    ->name('validate.bed.photo');
 
                Route::prefix('telephonic')
                ->name('telephonic.')
@@ -98,6 +102,17 @@ Route::middleware(['auth', 'role:dmo'])
                     Route::get('/view/{id}', [AuditController::class, 'fieldAuditForm'])->name('view');
                     Route::post('/view/{id}', [AuditController::class, 'storeFieldVisit'])->name('store');
                });
+
+
+               Route::prefix('live-audit')
+               ->name('live-audit.')
+               ->group(function () {
+                    Route::get( '/=',    [LiveAuditController::class, 'viewAll'])->name('all');
+                    Route::get( '/create',    [LiveAuditController::class, 'create'])->name('create');
+                    Route::post('/store',           [LiveAuditController::class, 'store']) ->name('store');
+                    Route::get( '/live-audit/{id}',      [LiveAuditController::class, 'show'])  ->name('show');
+               });
+
           });
           
      });

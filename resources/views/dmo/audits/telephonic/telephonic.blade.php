@@ -26,9 +26,11 @@
         <!-- filter bar (quick filter chips) -->
         <div class="flex flex-wrap items-center gap-3 mb-6">
             <span class="text-sm text-slate-400">Filter:</span>
-            <button class="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 text-xs px-4 py-2 rounded-full flex items-center gap-1 transition">All audits <span class="bg-slate-100 text-slate-600 ml-1 px-1.5 rounded-full text-[10px]">48</span></button>
-            <button class="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 text-xs px-4 py-2 rounded-full flex items-center gap-1">Pending <span class="bg-amber-100 text-amber-700 ml-1 px-1.5 rounded-full text-[10px]">12</span></button>
-            <button class="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 text-xs px-4 py-2 rounded-full flex items-center gap-1">Completed <span class="bg-emerald-100 text-emerald-700 ml-1 px-1.5 rounded-full text-[10px]">28</span></button>
+            <a href="{{ route('dmo.audits.telephonic.all') }}" class="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 text-xs px-4 py-2 rounded-full flex items-center gap-1 transition">All audits <span class="bg-slate-100 text-slate-600 ml-1 px-1.5 rounded-full text-[10px]">{{ $all }}</span></a>
+
+            <a href="{{ route('dmo.audits.telephonic.all', ['status' => 'pending']) }}" class="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 text-xs px-4 py-2 rounded-full flex items-center gap-1">Pending <span class="bg-amber-100 text-amber-700 ml-1 px-1.5 rounded-full text-[10px]">{{ $pending }}</span></a>
+            
+            <a href="{{ route('dmo.audits.telephonic.all', ['status' => 'completed']) }}" class="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 text-xs px-4 py-2 rounded-full flex items-center gap-1">Completed <span class="bg-emerald-100 text-emerald-700 ml-1 px-1.5 rounded-full text-[10px]">{{ $completed }}</span></a>
             
             
         </div>
@@ -84,14 +86,7 @@
                 </table>
             </div>
 
-            <!-- table footer with pagination and summary -->
-            <div class="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-sm">
-                <div class="text-slate-500">Showing 1–8 of 48 audits</div>
-                <div class="flex items-center gap-3">
-                    <button class="text-slate-400 hover:text-slate-700 w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white"><i class="fas fa-chevron-left text-xs"></i></button>
-                    <span class="text-slate-600 text-sm">1 · 2 · 3 · 4 · 5</span>
-                    <button class="text-slate-400 hover:text-slate-700 w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white"><i class="fas fa-chevron-right text-xs"></i></button>
-                </div>
-            </div>
+            
+            
         </div>
 		@endsection

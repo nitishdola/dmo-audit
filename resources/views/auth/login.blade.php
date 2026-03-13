@@ -24,19 +24,15 @@
           <div class="flex justify-between items-center h-20">
             <div class="flex items-center space-x-3">
               <!-- Government Logo Placeholder -->
-              <div
-                class="w-12 h-12 bg-blue-900 rounded-lg flex items-center justify-center text-white font-bold text-xl"
-              >
-                G
-              </div>
+              
               <div>
-                <h1 class="text-xl font-bold text-gray-900">
-                  {{ config('app.name', 'MyGov') }}
+                <h1 class="text-xl font-bold text-white">
+                  {{ config('app.name', 'DMO Audit POrtal') }}
                 </h1>
-                <p class="text-sm text-gray-600">Government of India</p>
+                <p class="text-sm text-white">Atal Amrit Abhiyan Society, Assam</p>
               </div>
             </div>
-            <div class="text-sm text-white">Atal Amrit Abhiyan Society</div>
+            <!-- <div class="text-sm text-white">Atal Amrit Abhiyan Society</div> -->
           </div>
         </div>
       </div>
@@ -123,35 +119,41 @@
       </div>
 
       <!-- Footer -->
-      <footer class="bg-white border-t border-gray-200 py-6">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="text-xs text-gray-600 space-y-2">
-            <p>
-              © Content owned, updated and maintained by the {{
-              config('app.name', 'MyGov') }} Cell. This website belongs to {{
-              config('app.name', 'MyGov') }}, Ministry of Electronics &
-              Information Technology, Government of India.
-            </p>
-            <p>
-              Platform is designed, developed and hosted by National Informatics
-              Centre.
-            </p>
-            <p class="text-gray-400">
-              © कॉन्टेंट का स्वामित्व, अपडेट और रखरखाव माईगव सेल के पास है। यह
-              वेबसाइट माईगव, इलेक्ट्रॉनिक्स और सूचना प्रौद्योगिकी मंत्रालय, भारत
-              सरकार की है।
-            </p>
-            <p>
-              प्लेटफ़ॉर्म को राष्ट्रीय सूचना विज्ञान केंद्र द्वारा डिज़ाइन, विकसित
-              और होस्ट किया गया है|
-            </p>
-            <p class="text-gray-400 mt-2">
-              auth-{{ rand(100, 999) }} - Last Updated: {{
-              now()->format('d/m/y') }}
-            </p>
-          </div>
+      <footer class="bg-white border-t border-slate-200/80 mt-auto">
+    <div class="px-6 md:px-8 py-4">
+        
+        <!-- Clauses / Disclaimers -->
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 mb-3">
+            <span class="flex items-center gap-1.5 text-xs text-slate-500">
+                <i class="fas fa-map-marker-alt text-emerald-500 text-[10px]"></i>
+                ** Location permission is required for accurate district data
+            </span>
+            <span class="w-px h-3 bg-slate-200 hidden sm:block"></span>
+            <span class="flex items-center gap-1.5 text-xs text-slate-500">
+                <i class="fas fa-robot text-emerald-500 text-[10px]"></i>
+                ** AI-assisted insights are for decision support only
+            </span>
+            
+            <span class="w-px h-3 bg-slate-200 hidden sm:block"></span>
+            <span class="flex items-center gap-1.5 text-xs text-slate-500">
+                <i class="fas fa-user-shield text-emerald-500 text-[10px]"></i>
+                ** Authorised personnel access only
+            </span>
         </div>
-      </footer>
+
+        <!-- Bottom row -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 pt-3 border-t border-slate-100">
+            <p class="text-xs text-slate-400">
+                &copy; {{ date('Y') }} Atal Amrit Abhiyan Society, Assam &middot; Govt. of Assam &middot; 
+            </p>
+            <p class="text-xs text-slate-400 flex items-center gap-1">
+                <i class="fas fa-circle text-emerald-400 text-[6px]"></i>
+                Powered by IT Cell, SHA Assam
+            </p>
+        </div>
+
+    </div>
+</footer>
     </div>
   </body>
 </html>

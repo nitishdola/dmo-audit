@@ -24,6 +24,66 @@
 
 @section('pageCss')
 <style>
+    /* ── Toast notifications ── */
+    #toast-container {
+        position: fixed;
+        top: 1.25rem;
+        right: 1.25rem;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: .625rem;
+        pointer-events: none;
+        max-width: min(420px, calc(100vw - 2.5rem));
+    }
+    .toast {
+        pointer-events: auto;
+        display: flex;
+        align-items: flex-start;
+        gap: .75rem;
+        padding: .875rem 1rem;
+        border-radius: .875rem;
+        border: 1.5px solid transparent;
+        box-shadow: 0 8px 24px rgba(0,0,0,.14), 0 2px 6px rgba(0,0,0,.08);
+        font-size: .8125rem;
+        font-weight: 500;
+        line-height: 1.45;
+        backdrop-filter: blur(6px);
+        transform: translateX(120%);
+        opacity: 0;
+        transition: transform .32s cubic-bezier(.22,1,.36,1), opacity .28s ease;
+        cursor: default;
+        position: relative;
+        overflow: hidden;
+    }
+    .toast.toast-in  { transform: translateX(0); opacity: 1; }
+    .toast.toast-out { transform: translateX(120%); opacity: 0; transition: transform .25s ease-in, opacity .22s ease-in; }
+
+    .toast-error   { background: rgba(255,241,242,.97); border-color: #fda4af; color: #9f1239; }
+    .toast-success { background: rgba(240,253,244,.97); border-color: #86efac; color: #14532d; }
+    .toast-warning { background: rgba(255,251,235,.97); border-color: #fde68a; color: #78350f; }
+    .toast-info    { background: rgba(239,246,255,.97); border-color: #93c5fd; color: #1e3a8a; }
+
+    .toast-icon { width: 1.75rem; height: 1.75rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: .8rem; margin-top: .05rem; }
+    .toast-error   .toast-icon { background: #fee2e2; color: #dc2626; }
+    .toast-success .toast-icon { background: #dcfce7; color: #16a34a; }
+    .toast-warning .toast-icon { background: #fef3c7; color: #d97706; }
+    .toast-info    .toast-icon { background: #dbeafe; color: #2563eb; }
+
+    .toast-body  { flex: 1; min-width: 0; }
+    .toast-title { font-weight: 700; font-size: .8125rem; margin-bottom: .15rem; }
+    .toast-msg ul { margin: .25rem 0 0 .1rem; padding-left: 1rem; list-style: disc; display: flex; flex-direction: column; gap: .2rem; }
+
+    .toast-close { flex-shrink: 0; background: none; border: none; cursor: pointer; opacity: .45; font-size: .75rem; padding: .1rem .2rem; margin-top: .05rem; transition: opacity .15s; line-height: 1; color: inherit; }
+    .toast-close:hover { opacity: .9; }
+
+    .toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; border-radius: 0 0 .875rem .875rem; animation: toast-drain linear forwards; }
+    .toast-error   .toast-progress { background: #f43f5e; }
+    .toast-success .toast-progress { background: #22c55e; }
+    .toast-warning .toast-progress { background: #f59e0b; }
+    .toast-info    .toast-progress { background: #3b82f6; }
+    @keyframes toast-drain { from { width: 100%; } to { width: 0%; } }
+
     /* ── Radio pill ── */
     .radio-group { display:inline-flex; border-radius:9999px; overflow:hidden; border:2px solid #e2e8f0; background:#f8fafc; }
     .radio-group input[type="radio"] { display:none; }
@@ -250,14 +310,9 @@
     @php
         $isSurgical = $fv?->treatment_type === 'Surgical';
         $checks = [
-            // [label, sub-label, field, remarks_field, surgical_only]
             ['Did the patient leave against medical advice?',                     null,                                                                                                                                           'lama',                         'lama_remarks',                        false],
-            ['Entry in Outdoor Register found',                                    null,                                                                                                                                           'outdoor_register',              'outdoor_register_remarks',             false],
-
-
+            ['Entry in Outdoor Register found',                                   null,                                                                                                                                           'outdoor_register',             'outdoor_register_remarks',            false],
             ['Entry in Indoor Register found',                                    null,                                                                                                                                           'indoor_register',              'indoor_register_remarks',             false],
-
-
             ['Entry in OT Register found',                                        'Only applicable for surgical cases',                                                                                                           'ot_register',                  'ot_register_remarks',                 true],
             ['Entry in Hospital Lab Register found',                              null,                                                                                                                                           'lab_register',                 'lab_register_remarks',                false],
             ['Completeness of IPD papers',                                        'Should have patient details, presenting complaints, diagnosis, investigations, treatment etc.',                                               'ipd_complete',                 'ipd_complete_remarks',                false],
@@ -439,15 +494,11 @@
         {{-- ── Verification Checks ── --}}
         <div class="section-badge"><span>Verification Checks</span></div>
 
-        {{-- Helper macro: yes/no/na radio --}}
         @php
         $rows = [
-            // [label, sub, name, surgical_only]
             ['Did the patient leave against medical advice?',                    null,                                                                                                                                           'lama',                         false],
-            ['If yes, why?',                                                     'Provide reason if patient left against medical advice',                                                                                        '_lama_reason',                 false],   // special text-only row
-            
-            ['Entry in Outdoor Register found',                                    null,                                                                                                                                           'outdoor_register',              'outdoor_register_remarks',             false],
-
+            ['If yes, why?',                                                     'Provide reason if patient left against medical advice',                                                                                        '_lama_reason',                 false],
+            ['Entry in Outdoor Register found',                                  null,                                                                                                                                           'outdoor_register',             false],
             ['Entry in Indoor Register found',                                   null,                                                                                                                                           'indoor_register',              false],
             ['Entry in OT Register found',                                       'Only applicable for surgical cases',                                                                                                           'ot_register',                  true],
             ['Entry in Hospital Lab Register found',                             null,                                                                                                                                           'lab_register',                 false],
@@ -474,8 +525,7 @@
         @php [$label, $sub, $name, $surgicalOnly] = $row; @endphp
 
         @if($name === '_lama_reason')
-        {{-- Special: text-only row, no yes/no --}}
-        <div class="obs-card {{ $surgicalOnly ? 'surgical-row' : '' }}" style="margin-top:.625rem;">
+        <div class="obs-card" style="margin-top:.625rem;">
             <span class="obs-label">{{ $label }}</span>
             @if($sub)<p class="obs-sub">{{ $sub }}</p>@endif
             <textarea name="lama_reason" rows="2" placeholder="Reason patient left against medical advice (if applicable)…" class="field-input">{{ old('lama_reason') }}</textarea>
@@ -502,7 +552,7 @@
 
         @endforeach
 
-        {{-- Overall justification (text area) --}}
+        {{-- Overall justification --}}
         <div class="section-badge"><span>Overall Justification</span></div>
         <div class="obs-card">
             <span class="obs-label">Do all documents align and justify the need and treatment given?</span>
@@ -546,13 +596,20 @@
                 </div>
             </div>
             <img id="map-thumb" src="" alt="Location map">
+
             <div class="flex gap-2 flex-wrap">
                 <button type="button" id="btn-open-cam" class="cam-btn cam-btn-dark"><i class="fas fa-camera"></i> Open Camera</button>
                 <button type="button" id="btn-retake" class="cam-btn cam-btn-danger" style="display:none;"><i class="fas fa-redo"></i> Retake</button>
             </div>
-            <p id="photo-error" class="text-rose-600 text-xs font-medium" style="display:none;">
-                <i class="fas fa-exclamation-triangle mr-1"></i> A site photograph is required before submitting.
-            </p>
+
+            <p id="photo-error" class="text-rose-600 text-xs font-medium" style="display:none;"></p>
+
+            <div id="ai-checking-msg" class="gps-pill gps-acquiring" style="display:none;">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>AI verifying persons in photo…</span>
+            </div>
+            <span id="ai-face-badge" class="gps-pill gps-ready" style="display:none; font-size:.75rem;"></span>
+
             <input type="hidden" name="photo_latitude"  id="field-lat">
             <input type="hidden" name="photo_longitude" id="field-lng">
             <input type="hidden" name="photo_address"   id="field-address">
@@ -581,7 +638,8 @@
         {{-- Submit row --}}
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-6 mt-6 border-t border-slate-200">
             <button type="submit" id="btn-submit"
-                    class="flex-1 sm:flex-none px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all">
+                    disabled
+                    class="flex-1 sm:flex-none px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:bg-slate-300 disabled:cursor-not-allowed disabled:shadow-none text-white font-medium text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all">
                 <i class="fas fa-check-circle"></i> Submit Medical Audit report
             </button>
             <button type="reset"
@@ -599,21 +657,61 @@
     All Medical Audit entries are logged with DMO credentials · PMJAY Assam
 </div>
 
+{{-- Toast container (always present so flash toasts work on read-only view too) --}}
+<div id="toast-container"></div>
+
 @if(!$isCompleted)
 <script>
-// ── Global: called from onclick on treatment type labels ──
-var _selectedTT = null; // tracks current selection — avoids relying on :checked DOM state
+/* ═══════════════════════════════════════════
+   Toast notification system
+   ═══════════════════════════════════════════ */
+function toast(type, title, message, duration) {
+    duration = duration ?? (type === 'error' ? 7000 : 4500);
+    const icons = { error: 'fa-times-circle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+
+    const sentences = (message || '')
+        .split(/(?<=\.)\s+/)
+        .map(s => s.trim())
+        .filter(Boolean);
+
+    const msgHtml = sentences.length > 1
+        ? '<ul>' + sentences.map(s => `<li>${s}</li>`).join('') + '</ul>'
+        : `<span>${sentences[0] ?? ''}</span>`;
+
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.innerHTML = `
+        <div class="toast-icon"><i class="fas ${icons[type] ?? 'fa-info-circle'}"></i></div>
+        <div class="toast-body">
+            <div class="toast-title">${title}</div>
+            <div class="toast-msg">${msgHtml}</div>
+        </div>
+        <button class="toast-close" title="Dismiss"><i class="fas fa-times"></i></button>
+        <div class="toast-progress" style="animation-duration:${duration}ms;"></div>
+    `;
+
+    document.getElementById('toast-container').appendChild(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('toast-in')));
+
+    const dismiss = () => {
+        el.classList.remove('toast-in');
+        el.classList.add('toast-out');
+        el.addEventListener('transitionend', () => el.remove(), { once: true });
+    };
+    const timer = setTimeout(dismiss, duration);
+    el.querySelector('.toast-close').addEventListener('click', () => { clearTimeout(timer); dismiss(); });
+}
+
+/* ── Global: called from onclick on treatment type labels ── */
+var _selectedTT = null;
 
 function selectTT(val) {
     _selectedTT = val;
-    // Check the actual radio input
     document.querySelectorAll('input[name="treatment_type"]').forEach(function(r) {
         r.checked = (r.value === val);
     });
-    // Update visual active state
     document.getElementById('lbl-surgical').className = (val === 'Surgical') ? 'tt-active-surgical' : '';
     document.getElementById('lbl-medical').className  = (val === 'Medical')  ? 'tt-active-medical'  : '';
-    // Show/hide surgical-only rows
     if (typeof applySurgicalVisibility === 'function') applySurgicalVisibility();
 }
 
@@ -643,9 +741,11 @@ function selectTT(val) {
     const fieldAddress   = document.getElementById('field-address');
     const fieldPhotoFile = document.getElementById('field-photo-file');
     const photoError     = document.getElementById('photo-error');
+    const checkingMsg    = document.getElementById('ai-checking-msg');
+    const faceBadge      = document.getElementById('ai-face-badge');
     const form           = document.getElementById('fieldVisitForm');
 
-    /* ═══ Surgical/Medical toggle — show/hide surgical-only rows ═══ */
+    /* ═══ Surgical/Medical toggle ═══ */
     function applySurgicalVisibility() {
         const isSurgical = _selectedTT === 'Surgical';
         document.querySelectorAll('.surgical-row').forEach(function(el) {
@@ -655,13 +755,9 @@ function selectTT(val) {
             el.style.display = isSurgical ? 'inline-flex' : 'none';
         });
     }
-    // Init on page load — pick up old() server value if validation failed and form was re-shown
     (function() {
         var checked = document.querySelector('input[name="treatment_type"]:checked');
-        if (checked) {
-            selectTT(checked.value);
-        }
-        // If nothing pre-checked, surgical rows stay hidden (default via CSS)
+        if (checked) selectTT(checked.value);
     })();
 
     /* ═══ GPS ═══ */
@@ -674,7 +770,9 @@ function selectTT(val) {
     }
     function reverseGeocode(lat, lng) {
         fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GMAPS_KEY}`)
-            .then(r => r.json()).then(d => { if (d.results?.[0]) { gpsAddr = d.results[0].formatted_address; fieldAddress.value = gpsAddr; updateOverlay(); } }).catch(() => {});
+            .then(r => r.json())
+            .then(d => { if (d.results?.[0]) { gpsAddr = d.results[0].formatted_address; fieldAddress.value = gpsAddr; updateOverlay(); } })
+            .catch(() => {});
     }
     if ('geolocation' in navigator) {
         navigator.geolocation.watchPosition(
@@ -690,33 +788,43 @@ function selectTT(val) {
             mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
             video.srcObject = mediaStream;
             viewfinderWrap.style.display = 'flex';
-            btnOpenCam.style.display = 'none'; previewWrap.style.display = 'none'; mapThumb.style.display = 'none'; btnRetake.style.display = 'none';
+            btnOpenCam.style.display = 'none';
+            previewWrap.style.display = 'none';
+            mapThumb.style.display    = 'none';
+            btnRetake.style.display   = 'none';
         } catch (err) { alert('Camera access denied: ' + err.message); }
     }
     function closeCamera() {
         if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
-        viewfinderWrap.style.display = 'none'; btnOpenCam.style.display = 'inline-flex';
-        if (photoTaken) btnRetake.style.display = 'inline-flex';
+        viewfinderWrap.style.display = 'none';
+        btnOpenCam.style.display     = 'inline-flex';
     }
     btnOpenCam.addEventListener('click',  openCamera);
-    btnCloseCam.addEventListener('click', closeCamera);
+    btnCloseCam.addEventListener('click', function () {
+        closeCamera();
+        if (photoTaken) btnRetake.style.display = 'inline-flex';
+    });
 
     /* ═══ Capture + watermark ═══ */
     btnSnap.addEventListener('click', function () {
         if (!gpsReady) { alert('GPS not ready yet. Please wait a moment.'); return; }
+
         const vw = video.videoWidth || 1280, vh = video.videoHeight || 960;
         canvas.width = vw; canvas.height = vh;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0, vw, vh);
-        const now = new Date();
-        const dtStr = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+
+        const now       = new Date();
+        const dtStr     = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
         const coordStr  = gpsLat.toFixed(6) + '° N,  ' + gpsLng.toFixed(6) + '° E';
         const shortAddr = gpsAddr ? gpsAddr.split(',').slice(-4).join(',').trim() : 'Address resolving…';
         const auditTag  = 'PMJAY Assam · DMO Field Audit';
+
         const fontSize = Math.max(14, Math.round(vh * 0.022));
-        const lineH = Math.round(fontSize * 1.5), pad = Math.round(vw * 0.018);
-        const lines = [auditTag, coordStr, shortAddr, dtStr];
-        const stripH = lines.length * lineH + pad * 2;
+        const lineH    = Math.round(fontSize * 1.5), pad = Math.round(vw * 0.018);
+        const lines    = [auditTag, coordStr, shortAddr, dtStr];
+        const stripH   = lines.length * lineH + pad * 2;
+
         ctx.fillStyle = 'rgba(0,0,0,0.62)'; ctx.fillRect(0, vh - stripH, vw, stripH);
         ctx.font = '600 ' + fontSize + 'px "Segoe UI", Arial, sans-serif'; ctx.textBaseline = 'top';
         lines.forEach((line, i) => {
@@ -726,17 +834,115 @@ function selectTT(val) {
         });
         const bw = Math.max(3, Math.round(vw * 0.004));
         ctx.strokeStyle = '#34d399'; ctx.lineWidth = bw; ctx.strokeRect(bw/2, bw/2, vw - bw, vh - bw);
-        previewImg.src = canvas.toDataURL('image/jpeg', 0.92);
+
+        previewImg.src            = canvas.toDataURL('image/jpeg', 0.92);
         previewWrap.style.display = 'block';
-        wmLine1.textContent = auditTag; wmLine2.textContent = coordStr; wmLine3.textContent = dtStr;
+        wmLine1.textContent       = auditTag;
+        wmLine2.textContent       = coordStr;
+        wmLine3.textContent       = dtStr;
+
         const mapUrl = 'https://maps.googleapis.com/maps/api/staticmap?center=' + gpsLat + ',' + gpsLng + '&zoom=15&size=480x160&maptype=roadmap&markers=color:red%7C' + gpsLat + ',' + gpsLng + '&key=' + GMAPS_KEY;
-        mapThumb.src = mapUrl; mapThumb.style.display = 'block';
-        fieldLat.value = gpsLat; fieldLng.value = gpsLng; fieldAddress.value = gpsAddr;
-        canvas.toBlob(blob => { const f = new File([blob], 'field_visit_' + Date.now() + '.jpg', { type:'image/jpeg' }); const dt = new DataTransfer(); dt.items.add(f); fieldPhotoFile.files = dt.files; }, 'image/jpeg', 0.92);
-        photoTaken = true; photoError.style.display = 'none';
-        closeCamera(); btnRetake.style.display = 'inline-flex';
+        mapThumb.src              = mapUrl;
+        mapThumb.style.display    = 'block';
+        fieldLat.value            = gpsLat;
+        fieldLng.value            = gpsLng;
+        fieldAddress.value        = gpsAddr;
+
+        canvas.toBlob(blob => {
+            const f  = new File([blob], 'field_visit_' + Date.now() + '.jpg', { type: 'image/jpeg' });
+            const dt = new DataTransfer();
+            dt.items.add(f);
+            fieldPhotoFile.files = dt.files;
+        }, 'image/jpeg', 0.92);
+
+        closeCamera();
+        photoTaken                = false;
+        btnRetake.style.display   = 'none';
+        photoError.style.display  = 'none';
+        faceBadge.style.display   = 'none';
+        checkingMsg.style.display = 'flex';
+
+        fetch('{{ route("dmo.audits.validate.photo") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
+            },
+            body: JSON.stringify({ image: canvas.toDataURL('image/jpeg', 0.92) })
+        })
+        .then(r => r.json())
+        .then(data => {
+            checkingMsg.style.display = 'none';
+            btnRetake.style.display   = 'inline-flex';
+
+            if (data.valid) {
+                photoTaken               = true;
+                photoError.style.display = 'none';
+                faceBadge.innerHTML      = '<i class="fas fa-check-circle mr-1"></i>' + data.message;
+                faceBadge.style.display  = 'inline-flex';
+                document.getElementById('btn-submit').disabled = false;
+
+                toast('success', 'AI Verification Passed', data.message);
+
+            } else {
+                photoTaken = false;
+                document.getElementById('btn-submit').disabled = true;
+
+                // Split multi-sentence errors into bullet lines
+                const sentences = (data.message || 'AI validation failed.')
+                    .split(/(?<=\.)\s+/)
+                    .map(s => s.trim())
+                    .filter(Boolean);
+
+                const bulletHtml = sentences.length > 1
+                    ? '<ul style="margin:.3rem 0 0 .1rem; padding-left:1.1rem; list-style:disc; display:flex; flex-direction:column; gap:.25rem;">'
+                        + sentences.map(s => `<li>${s}</li>`).join('')
+                        + '</ul>'
+                    : sentences[0];
+
+                photoError.innerHTML =
+                    '<div style="display:flex; align-items:flex-start; gap:.5rem;">'
+                    + '<i class="fas fa-exclamation-triangle" style="margin-top:.15rem; flex-shrink:0;"></i>'
+                    + '<div>' + bulletHtml + '</div>'
+                    + '</div>';
+
+                photoError.style.display = 'block';
+                faceBadge.style.display  = 'none';
+
+                document.getElementById('camera-section')
+                    .scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                toast('error', 'AI Verification Failed', data.message, 8000);
+            }
+        })
+        .catch(() => {
+            // Fail-open: Vision API down — warn but allow submission
+            checkingMsg.style.display = 'none';
+            btnRetake.style.display   = 'inline-flex';
+            photoTaken                = true;
+            document.getElementById('btn-submit').disabled = false;
+
+            faceBadge.className     = 'gps-pill gps-acquiring';
+            faceBadge.innerHTML     = '<i class="fas fa-exclamation-circle mr-1"></i> AI check skipped — photo accepted, flagged for manual review';
+            faceBadge.style.display = 'inline-flex';
+
+            photoError.style.display = 'none';
+
+            toast('warning', 'AI Check Skipped', 'Vision service unavailable. Photo accepted — flagged for manual review by supervisor.');
+        });
     });
-    btnRetake.addEventListener('click', function () { photoTaken = false; previewWrap.style.display = 'none'; mapThumb.style.display = 'none'; btnRetake.style.display = 'none'; openCamera(); });
+
+    btnRetake.addEventListener('click', function () {
+        photoTaken                = false;
+        document.getElementById('btn-submit').disabled = true;
+        previewWrap.style.display = 'none';
+        mapThumb.style.display    = 'none';
+        btnRetake.style.display   = 'none';
+        faceBadge.style.display   = 'none';
+        checkingMsg.style.display = 'none';
+        photoError.style.display  = 'none';
+        openCamera();
+    });
 
     /* ═══ Attachments ═══ */
     const attachList = document.getElementById('attachment-list');
@@ -792,8 +998,22 @@ function selectTT(val) {
     /* ═══ Form validation ═══ */
     form.addEventListener('submit', function (e) {
         let blocked = false;
-        if (!photoTaken)        { photoError.style.display = 'block'; document.getElementById('camera-section').scrollIntoView({ behavior:'smooth', block:'center' }); blocked = true; }
-        if (!attachmentValid()) { attachErr.style.display  = 'block'; if (!blocked) attachList.scrollIntoView({ behavior:'smooth', block:'center' }); blocked = true; }
+
+        if (!photoTaken) {
+            photoError.innerHTML     = '<i class="fas fa-exclamation-triangle mr-1"></i> A site photograph with at least 2 people is required before submitting.';
+            photoError.style.display = 'block';
+            document.getElementById('camera-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            toast('error', 'Photo Required', 'A site photograph with AI verification is required before submitting.');
+            blocked = true;
+        }
+
+        if (!attachmentValid()) {
+            attachErr.style.display = 'block';
+            if (!blocked) attachList.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            toast('error', 'Attachment Required', 'At least one attachment with a name and file is required.');
+            blocked = true;
+        }
+
         if (blocked) e.preventDefault();
     });
 
