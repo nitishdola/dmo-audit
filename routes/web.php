@@ -1,6 +1,7 @@
 <?php
 
-use App\Http\Controllers\Admin\AdminDashboardController;
+
+
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\DMO\DmoDashboardController;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +11,12 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\DMO\AuditController;
 use App\Http\Controllers\DMO\VisionController;
 use App\Http\Controllers\DMO\LiveAuditController;
+
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminTelephonicAuditController;
+use App\Http\Controllers\Admin\AdminFieldVisitController;
+use App\Http\Controllers\Admin\AdminLiveAuditController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -18,6 +25,7 @@ use App\Http\Controllers\DMO\LiveAuditController;
 
 // Redirect root to login
 Route::get('/', fn () => redirect()->route('auth.login'));
+Route::get('login', [AuthController::class, 'showLogin'])->name('login');
 
 // ─── Authentication Routes (guests only) ─────────────────────────────────────
 
@@ -36,7 +44,7 @@ Route::middleware('guest')->prefix('auth')->name('auth.')->group(function () {
 // ─── Logout ───────────────────────────────────────────────────────────────────
 
 
-Route::get('logout', [AuthController::class, 'logout'])
+Route::post('logout', [AuthController::class, 'logout'])
      ->middleware('auth')
      ->name('auth.logout');
 // ─── Admin Routes ─────────────────────────────────────────────────────────────
@@ -67,6 +75,55 @@ Route::middleware(['auth', 'role:admin'])
 
           Route::get('/generate-audits', [AdminController::class, 'generateAuditsPage']);
           Route::post('/generate-audits', [AdminController::class, 'generateAudits']);
+
+          Route::prefix('users')
+                    ->name('users.')
+                    ->group(function () {
+                         Route::get('/', [AuditController::class, 'telephonicAudits'])->name('index');
+               });
+
+          Route::prefix('dmos')
+                    ->name('dmos.')
+                    ->group(function () {
+                         Route::get('/', [AuditController::class, 'telephonicAudits'])->name('index');
+               });
+
+          Route::prefix('hospitals')
+                    ->name('hospitals.')
+                    ->group(function () {
+                         Route::get('/', [AuditController::class, 'telephonicAudits'])->name('index');
+               });
+
+          Route::prefix('districts')
+                    ->name('districts.')
+                    ->group(function () {
+                         Route::get('/', [AuditController::class, 'telephonicAudits'])->name('index');
+               });
+
+          Route::prefix('audits')
+          ->name('audits.')
+          ->group(function () {
+               Route::prefix('telephonic')
+                    ->name('telephonic.')
+                    ->group(function () {
+                         Route::get('/', [AdminTelephonicAuditController::class, 'index'])->name('index');
+                         Route::get('/{id}',    [AdminTelephonicAuditController::class, 'show']) ->name('show');
+               });
+
+               Route::prefix('field')
+                    ->name('field.')
+                    ->group(function () {
+                         Route::get('/', [AdminFieldVisitController::class, 'index'])->name('index');
+                         Route::get('/{id}',    [AdminFieldVisitController::class, 'show']) ->name('show');
+               });
+
+               Route::prefix('live')
+                    ->name('live.')
+                    ->group(function () {
+                         Route::get('/', [AdminLiveAuditController::class, 'index'])->name('index');
+                         Route::get('/{id}',    [AdminLiveAuditController::class, 'show']) ->name('show');
+               });
+          });
      });
 
 

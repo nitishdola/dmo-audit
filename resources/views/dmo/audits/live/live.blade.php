@@ -783,10 +783,6 @@
 
 <div id="toast-container"></div>
 
-<div class="text-xs text-slate-400 text-center mt-6 border-t border-slate-200 pt-5">
-    <i class="fas fa-shield-alt text-emerald-500 mr-1"></i>
-    All Live Audit entries are logged with DMO credentials · PMJAY Assam
-</div>
 
 {{-- ── JavaScript (form branch only) ── --}}
 @if(!$isCompleted)
