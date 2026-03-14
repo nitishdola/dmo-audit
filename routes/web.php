@@ -167,7 +167,7 @@ Route::middleware(['auth', 'role:dmo'])
                     Route::get( '/=',    [LiveAuditController::class, 'viewAll'])->name('all');
                     Route::get( '/create',    [LiveAuditController::class, 'create'])->name('create');
                     Route::post('/store',           [LiveAuditController::class, 'store']) ->name('store');
-                    Route::get( '/live-audit/{id}',      [LiveAuditController::class, 'show'])  ->name('show');
+                    Route::get( '/show/{id}',      [LiveAuditController::class, 'show'])  ->name('show');
                });
 
           });

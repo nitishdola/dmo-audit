@@ -4,7 +4,7 @@
 <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
     <div>
         <div class="flex items-center gap-3 mb-1">
-            <div class="h-8 w-1 rounded-full bg-gradient-to-b from-cyan-400 to-blue-600"></div>
+            <div class="h-8 w-1 rounded-full bg-linear-to-b from-cyan-400 to-blue-600"></div>
             <span class="text-xs font-bold tracking-[.2em] uppercase text-slate-400">PMJAY Assam · Admin Console</span>
         </div>
         <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-none">

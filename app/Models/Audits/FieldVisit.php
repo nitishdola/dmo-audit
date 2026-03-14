@@ -88,6 +88,8 @@ class FieldVisit extends Model
         'photo_longitude',
         'photo_address',
         'photo_taken_at',
+
+        'submitted_by'
     ];
 
     protected $casts = [
@@ -103,6 +105,6 @@ class FieldVisit extends Model
 
     public function submittedBy()
     {
-        return $this->belongsTo(User::class,'created_by');
+        return $this->belongsTo(User::class,'submitted_by');
     }
 }

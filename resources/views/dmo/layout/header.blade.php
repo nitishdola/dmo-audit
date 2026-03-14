@@ -42,11 +42,14 @@
                     </div>
 
                     <!-- Logout -->
-                    <a href="{{ route('auth.logout') }}"
-                       class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors w-full">
-                        <i class="fas fa-sign-out-alt text-xs"></i>
-                        Logout
-                    </a>
+                    <form method="POST" action="{{ route('auth.logout') }}">
+                        @csrf
+                        <button type="submit"
+                                style="display:flex; align-items:center; gap:.75rem; width:100%; padding:.625rem .875rem; border-radius:.75rem; font-size:.8125rem; color:#e11d48; background:none; border:none; cursor:pointer; transition:background .15s; text-align:left;"
+                                onmouseover="this.style.background='#fff1f2'" onmouseout="this.style.background='transparent'">
+                            <i class="fas fa-sign-out-alt w-4 text-center"></i> Sign out
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

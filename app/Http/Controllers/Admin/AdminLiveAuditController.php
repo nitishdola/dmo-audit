@@ -44,7 +44,7 @@ class AdminLiveAuditController extends Controller
             $query->where('submitted_by', $request->dmo_id);
         }
 
-        $audits = $query->paginate(20)->withQueryString();
+        $audits = $query->paginate(100)->withQueryString();
         $dmos   = \App\Models\User::role('dmo')->orderBy('name')->get();
 
         $summary = LiveAudit::selectRaw("

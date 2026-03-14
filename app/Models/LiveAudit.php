@@ -16,7 +16,8 @@ class LiveAudit extends Model
         // Patient & Case Details
         'patient_name',
         'contact_number',
-        'hospital_name',          // DMO selects hospital freely — no FK
+        'hospital_id',        
+        'district_id',        
         'pmjay_id',
         'registration_number',
         'package_booked',
@@ -91,6 +92,16 @@ class LiveAudit extends Model
     public function submittedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function hospital(): BelongsTo
+    {
+        return $this->belongsTo(Hospital::class, 'hospital_id');
+    }
+
+    public function district(): BelongsTo
+    {
+        return $this->belongsTo(District::class, 'district_id');
     }
 
     public function attachments(): HasMany

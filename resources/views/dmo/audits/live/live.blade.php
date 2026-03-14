@@ -445,11 +445,35 @@
                        placeholder="Patient's mobile number" class="field-input" autocomplete="off">
             </div>
 
-            <div class="obs-card sm:col-span-2">
-                <span class="obs-label">Select hospital <span class="text-rose-500">*</span></span>
-                <input type="text" name="hospital_name" value="{{ old('hospital_name') }}"
-                       placeholder="Name of the hospital being audited" class="field-input" autocomplete="off">
-                @error('hospital_name')<p class="text-rose-500 text-xs">{{ $message }}</p>@enderror
+            <div class="obs-card">
+                <span class="obs-label">District <span class="text-rose-500">*</span></span>
+                <select name="district_id" id="district-select" class="field-input" onchange="filterHospitals(this.value)">
+                    <option value="">— Select district —</option>
+                    @foreach($districts as $d)
+                    <option value="{{ $d->id }}" {{ old('district_id') == $d->id ? 'selected' : '' }}>
+                        {{ $d->name }}
+                    </option>
+                    @endforeach
+                </select>
+                @error('district_id')<p class="text-rose-500 text-xs">{{ $message }}</p>@enderror
+            </div>
+
+            <div class="obs-card">
+                <span class="obs-label">Hospital <span class="text-rose-500">*</span></span>
+                <select name="hospital_id" id="hospital-select" class="field-input"
+                        onchange="syncHospitalName(this)">
+                    <option value="">— Select hospital —</option>
+                    @foreach($hospitals as $h)
+                    <option value="{{ $h->id }}"
+                            data-name="{{ $h->name }}"
+                            data-district="{{ $h->district_id ?? '' }}"
+                            {{ old('hospital_id') == $h->id ? 'selected' : '' }}>
+                        {{ $h->name }}
+                    </option>
+                    @endforeach
+                </select>
+                
+                @error('hospital_id')<p class="text-rose-500 text-xs">{{ $message }}</p>@enderror
             </div>
 
             <div class="obs-card">
@@ -928,10 +952,13 @@ function toggleCond(id, show) {
         mapThumb.src = mapUrl; mapThumb.style.display = 'block';
         fieldLat.value = gpsLat; fieldLng.value = gpsLng; fieldAddress.value = gpsAddr;
 
+        let blobReady = false;
+        
         canvas.toBlob(blob => {
             const f = new File([blob], 'live_audit_' + Date.now() + '.jpg', { type: 'image/jpeg' });
             const dt = new DataTransfer(); dt.items.add(f);
             fieldPhotoFile.files = dt.files;
+            blobReady = true;
         }, 'image/jpeg', 0.92);
 
         closeCamera();
@@ -1039,6 +1066,7 @@ function toggleCond(id, show) {
     /* ── Retake ── */
     btnRetake.addEventListener('click', function () {
         photoTaken = false;
+    blobReady  = false;
         previewWrap.style.display = 'none';
         mapThumb.style.display    = 'none';
         btnRetake.style.display   = 'none';
@@ -1102,7 +1130,7 @@ function toggleCond(id, show) {
 
     /* ── Form submit guard ── */
     form.addEventListener('submit', function (e) {
-        if (!photoTaken) {
+        if (!photoTaken || !blobReady) {
             photoError.innerHTML     = '<i class="fas fa-exclamation-triangle mr-1"></i> An AI-verified on-bed patient photograph is required before submitting.';
             photoError.style.display = 'block';
             document.getElementById('camera-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1162,6 +1190,64 @@ function toast(type, title, message, duration) {
     // Manual close
     el.querySelector('.toast-close').addEventListener('click', () => { clearTimeout(timer); dismiss(); });
 }
+/* ── Hospital / District dropdowns ── */
+function filterHospitals(districtId) {
+    const select  = document.getElementById('hospital-select');
+    const emptyMsg= document.getElementById('hospital-empty-msg');
+    const options = select.querySelectorAll('option');
+
+    // Reset selection
+    select.value = '';
+    document.getElementById('hospital-name-hidden').value = '';
+
+    let visible = 0;
+    options.forEach(opt => {
+        if (!opt.value) return; // keep placeholder
+        const show = !districtId || opt.dataset.district === String(districtId);
+        opt.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+
+    emptyMsg.style.display = visible === 0 && districtId ? 'block' : 'none';
+}
+
+function syncHospitalName(select) {
+    const opt  = select.options[select.selectedIndex];
+    const name = opt ? (opt.dataset.name || '') : '';
+    document.getElementById('hospital-name-hidden').value = name;
+
+    // Show manual entry option at bottom of list
+    const wrap = document.getElementById('hospital-manual-wrap');
+    wrap.style.display = 'none';
+    document.getElementById('hospital-manual').value = '';
+}
+
+// On page load: if old() values exist, re-apply district filter and mark "other" option
+(function () {
+    const districtSel = document.getElementById('district-select');
+    const hospitalSel = document.getElementById('hospital-select');
+
+    if (districtSel.value) filterHospitals(districtSel.value);
+
+    // Add a static "Not in list" option at the bottom
+    const other = document.createElement('option');
+    other.value = '__other__';
+    other.textContent = '— Not in list (type manually) —';
+    hospitalSel.appendChild(other);
+
+    hospitalSel.addEventListener('change', function () {
+        const wrap = document.getElementById('hospital-manual-wrap');
+        if (this.value === '__other__') {
+            wrap.style.display = 'block';
+            document.getElementById('hospital-name-hidden').value = '';
+            document.getElementById('hospital-manual').focus();
+        } else {
+            wrap.style.display = 'none';
+            syncHospitalName(this);
+        }
+    });
+})();
+
 </script>
 @endif
 @endsection

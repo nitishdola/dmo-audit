@@ -416,13 +416,6 @@
         {{-- Right actions --}}
         <div class="topbar-right">
 
-            {{-- Search --}}
-            <button class="topbar-icon-btn" title="Search">
-                <i class="fas fa-search text-xs"></i>
-            </button>
-
-            
-
             {{-- Period selector (only shown on audit dashboard) --}}
             @hasSection('period_selector')
             @yield('period_selector')

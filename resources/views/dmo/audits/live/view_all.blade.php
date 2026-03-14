@@ -138,7 +138,7 @@
                         <p class="text-xs text-slate-400 mt-0.5">{{ $la->contact_number }}</p>
                         @endif
                     </td>
-                    <td class="px-6 py-4 text-slate-600">{{ $la->hospital_name ?? '—' }}</td>
+                    <td class="px-6 py-4 text-slate-600">{{ $la->hospital->name ?? '—' }}</td>
                     <td class="px-6 py-4 text-slate-500 font-mono text-xs">{{ $la->pmjay_id ?? '—' }}</td>
                     <td class="px-6 py-4">
                         @if($la->treatment_type === 'Surgical')
@@ -173,7 +173,7 @@
                         <span class="text-slate-400">{{ $la->created_at->format('h:i A') }}</span>
                     </td>
                     <td class="px-6 py-4 text-right">
-                        <a href="{{ route('dmo.live-audit.show', $la->id) }}"
+                        <a href="{{ route('dmo.audits.live-audit.show', $la->id) }}"
                            class="text-slate-400 hover:text-violet-600 transition mx-1" title="View">
                             <i class="fas fa-eye"></i>
                         </a>

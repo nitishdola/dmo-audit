@@ -67,13 +67,14 @@ class AuditController extends Controller
             'pmjay_audit_id' => $audit->id,
             'observation' => $request->observation,
             'audit_conclusion_id' => $request->audit_conclusion_id,
+            'submitted_by' => auth()->user()->id
         ]);
 
         $audit->status = 'completed';
         $audit->save();
         
 
-        return redirect()->route('audits.telephonic')
+        return redirect()->route('dmo.audits.telephonic.all')
                 ->with('success','Observation saved successfully');
     }
 
@@ -206,7 +207,7 @@ class AuditController extends Controller
                     'audit_id' => $auditId,
                     'photo_path' => $photoPath,
                     'photo_taken_at' => now(),
-                    'created_by' => auth()->id(),
+                    'submitted_by' => auth()->user()->id
                 ]
             ));
 

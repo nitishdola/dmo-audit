@@ -52,13 +52,20 @@
         @endforeach
     </select>
 
+    <select name="dmo_id" class="filter-input">
+        <option value="">All DMOs</option>
+        @foreach($dmos as $dmo)
+        <option value="{{ $dmo->id }}" {{ request('dmo_id') == $dmo->id ? 'selected' : '' }}>{{ $dmo->name }}</option>
+        @endforeach
+    </select>
+
     <input type="date" name="date_from" value="{{ request('date_from') }}" class="filter-input" title="From date">
     <input type="date" name="date_to"   value="{{ request('date_to') }}"   class="filter-input" title="To date">
 
     <button type="submit" class="filter-btn filter-btn-primary">
         <i class="fas fa-search mr-1"></i> Filter
     </button>
-    @if(request()->hasAny(['search','status','district_id','date_from','date_to']))
+    @if(request()->hasAny(['search','status','district_id','dmo_id','date_from','date_to']))
     <a href="{{ route('admin.audits.telephonic.index') }}" class="filter-btn filter-btn-ghost">
         <i class="fas fa-times mr-1"></i> Clear
     </a>

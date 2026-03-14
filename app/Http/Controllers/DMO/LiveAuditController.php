@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Illuminate\Http\Request;
+
 class LiveAuditController extends Controller
 {
     /**
@@ -17,7 +18,9 @@ class LiveAuditController extends Controller
      */
     public function create(): View
     {
-        return view('dmo.audits.live.live');
+        $hospitals   = \App\Models\Hospital::orderBy('name')->get();
+        $districts   = \App\Models\District::orderBy('name')->get();
+        return view('dmo.audits.live.live', compact('hospitals', 'districts'));
     }
 
     /**
@@ -25,12 +28,12 @@ class LiveAuditController extends Controller
      */
     public function show(int $id): View
     {
-        $liveAudit = LiveAudit::with(['attachments', 'submittedBy'])
+        $liveAudit = LiveAudit::with(['attachments', 'submittedBy', 'hospital', 'district'])
             ->where('id', $id)
             ->where('submitted_by', auth()->id())
             ->firstOrFail();
 
-        return view('dmo.audits.live-audit', compact('liveAudit'));
+        return view('dmo.audits.live.show', compact('liveAudit'));
     }
 
     /**
@@ -38,6 +41,7 @@ class LiveAuditController extends Controller
      */
     public function store(StoreLiveAuditRequest $request): RedirectResponse
     {
+        //dd($request->all());
         $liveAudit = DB::transaction(function () use ($request) {
 
             $bedPhotoPath = $request->file('bed_photo')
@@ -56,6 +60,8 @@ class LiveAuditController extends Controller
                 'contact_number'        => $request->contact_number,
                 'hospital_name'         => $request->hospital_name,
                 'pmjay_id'              => $request->pmjay_id,
+                'hospital_id'           => $request->hospital_id,
+                'district_id'           => $request->district_id,
                 'registration_number'   => $request->registration_number,
                 'package_booked'        => $request->package_booked,
                 'treating_doctor'       => $request->treating_doctor,
@@ -122,7 +128,7 @@ class LiveAuditController extends Controller
         });
 
         return redirect()
-            ->route('dmo.live-audit.show', $liveAudit->id)
+            ->route('dmo.audits.live-audit.show', $liveAudit->id)
             ->with('success', 'Live audit submitted successfully.');
     }
 

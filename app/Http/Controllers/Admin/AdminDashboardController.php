@@ -292,14 +292,14 @@ class AdminDashboardController extends Controller
                 'created_at'    => Carbon::parse($r->created_at),
             ]);
 
-        $recentLive = LiveAudit::with('submittedBy')
+        $recentLive = LiveAudit::with('submittedBy', 'hospital')
             ->whereBetween('created_at', [$from, $to])
             ->latest()->limit(5)->get()
             ->map(fn($l) => [
                 'type'          => 'live',
                 'dmo_name'      => $l->submittedBy?->name ?? '—',
                 'patient_name'  => $l->patient_name,
-                'hospital_name' => $l->hospital_name,
+                'hospital_name' => $l->hospital->name,
                 'created_at'    => $l->created_at,
             ]);
 
@@ -316,12 +316,13 @@ class AdminDashboardController extends Controller
             ->limit(7)
             ->pluck('cnt', 'name');
 
-        $topHospitalsLive = LiveAudit::whereBetween('created_at', [$from, $to])
-            ->selectRaw("hospital_name AS name, COUNT(*) AS cnt")
-            ->groupBy('hospital_name')
-            ->orderByDesc('cnt')
-            ->limit(7)
-            ->pluck('cnt', 'name');
+        $topHospitalsLive = LiveAudit::whereBetween('live_audits.created_at', [$from, $to])
+                ->join('hospitals', 'hospitals.id', '=', 'live_audits.hospital_id')
+                ->selectRaw('hospitals.name AS name, COUNT(*) AS cnt')
+                ->groupBy('hospitals.id', 'hospitals.name')
+                ->orderByDesc('cnt')
+                ->limit(7)
+                ->pluck('cnt', 'name');
 
         $topHospitals = $topHospitalsField
             ->mergeRecursive($topHospitalsLive)
