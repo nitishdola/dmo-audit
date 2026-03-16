@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
-
+use App\Models\Audits\InfrastructureAudit;
 class AdminDashboardController extends Controller
 {
     public function index(Request $request): View
@@ -45,16 +45,96 @@ class AdminDashboardController extends Controller
             ")
             ->first();
 
-        // Active DMO count — DMOs who submitted at least one live audit in the period
+        // ── 1a. Infrastructure Audit stats ────────────────────────────────────
+        // Mirrors liveStats structure: single aggregated query, same date range.
+        $infraStats = InfrastructureAudit::whereBetween('created_at', [$from, $to])
+            ->selectRaw("
+                COUNT(*)                                                              AS infra_total,
+                SUM(CASE WHEN hospital_type = 'Public'  THEN 1 ELSE 0 END)           AS public_count,
+                SUM(CASE WHEN hospital_type = 'Private' THEN 1 ELSE 0 END)           AS private_count,
+                SUM(CASE WHEN ai_banner_pass = 1        THEN 1 ELSE 0 END)           AS banner_passed,
+                SUM(CASE WHEN ai_banner_pass = 0        THEN 1 ELSE 0 END)           AS banner_failed,
+                SUM(CASE WHEN ai_banner_pass IS NULL    THEN 1 ELSE 0 END)           AS banner_unchecked,
+                SUM(CASE WHEN overall_hygiene = 'Good'  THEN 1 ELSE 0 END)           AS hygiene_good,
+                SUM(CASE WHEN overall_hygiene = 'Poor'  THEN 1 ELSE 0 END)           AS hygiene_poor,
+                SUM(CASE WHEN icu_available = 'Yes'     THEN 1 ELSE 0 END)           AS icu_count,
+                SUM(CASE WHEN ot_available  = 'Yes'     THEN 1 ELSE 0 END)           AS ot_count
+            ")
+            ->first();
+
+        $infraTotal        = (int) ($infraStats->infra_total       ?? 0);
+        $infraBannerPassed = (int) ($infraStats->banner_passed     ?? 0);
+        $infraBannerFailed = (int) ($infraStats->banner_failed     ?? 0);
+        $infraUnchecked    = (int) ($infraStats->banner_unchecked  ?? 0);
+        $infraBannerRate   = $infraTotal > 0
+            ? round($infraBannerPassed / $infraTotal * 100)
+            : 0;
+
+        // Growth vs previous period
+        $infraPrevTotal = InfrastructureAudit::whereBetween('created_at', [
+            now()->subDays($days * 2)->startOfDay(), $from,
+        ])->count();
+        $infraGrowthPct = $infraPrevTotal > 0
+            ? round((($infraTotal - $infraPrevTotal) / $infraPrevTotal) * 100)
+            : 0;
+
+        // Daily series for the chart (merged into existing timeline later)
+        $infraByDay = InfrastructureAudit::whereBetween('created_at', [$from, $to])
+            ->selectRaw("DATE(created_at) AS d, COUNT(*) AS n")
+            ->groupBy('d')
+            ->pluck('n', 'd');
+
+        // Recent infra audit activity (for the activity feed)
+        $recentInfra = InfrastructureAudit::with('submittedBy')
+            ->whereBetween('created_at', [$from, $to])
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(fn ($a) => [
+                'type'          => 'infra',
+                'dmo_name'      => $a->submittedBy?->name ?? '—',
+                'patient_name'  => null,
+                'hospital_name' => $a->hospital_name,
+                'created_at'    => $a->created_at,
+            ]);
+
+        // Infra audits grouped by district (for district bar chart)
+        
+
+        // Per-DMO infra counts (merged into dmoStats below)
+        $infraCounts = InfrastructureAudit::whereBetween('created_at', [$from, $to])
+            ->selectRaw("submitted_by AS user_id, COUNT(*) AS n")
+            ->groupBy('submitted_by')
+            ->pluck('n', 'user_id');
+
+        // Pack into array for view (mirrors $live / $tele / $field structure)
+        $infra = [
+            'total'          => $infraTotal,
+            'public_count'   => (int) ($infraStats->public_count  ?? 0),
+            'private_count'  => (int) ($infraStats->private_count ?? 0),
+            'banner_passed'  => $infraBannerPassed,
+            'banner_failed'  => $infraBannerFailed,
+            'banner_unchecked'=> $infraUnchecked,
+            'banner_pass_rate'=> $infraBannerRate,
+            'hygiene_good'   => (int) ($infraStats->hygiene_good  ?? 0),
+            'hygiene_poor'   => (int) ($infraStats->hygiene_poor  ?? 0),
+            'icu_count'      => (int) ($infraStats->icu_count     ?? 0),
+            'ot_count'       => (int) ($infraStats->ot_count      ?? 0),
+            'growth_pct'     => abs($infraGrowthPct),
+            'growth_up'      => $infraGrowthPct >= 0,
+            'avg_per_dmo_day'=> $days > 0 ? round($infraTotal / max(1, $days), 1) : 0,
+        ];
+
+        // ── 2. Active DMOs ────────────────────────────────────────────────────
         $activeDmos = User::role('dmo')
-            ->whereHas('liveAudits', fn($q) => $q->whereBetween('created_at', [$from, $to]))
+            ->whereHas('liveAudits', fn ($q) => $q->whereBetween('created_at', [$from, $to]))
             ->count();
 
         // Growth rate vs previous period
         $prevTotal    = PmjayAudit::whereBetween('created_at', [now()->subDays($days * 2)->startOfDay(), $from])->count();
-        $currTotal    = (int) ($assigned->grand_total ?? 0) + (int) ($liveStats->live_total ?? 0);
+        $currTotal    = (int) ($assigned->grand_total ?? 0) + (int) ($liveStats->live_total ?? 0) + $infraTotal;
         $growthPct    = $prevTotal > 0 ? round((($currTotal - $prevTotal) / $prevTotal) * 100) : 0;
-        $completedAll = (int) ($assigned->completed ?? 0) + (int) ($liveStats->live_total ?? 0);
+        $completedAll = (int) ($assigned->completed ?? 0) + (int) ($liveStats->live_total ?? 0) + $infraTotal;
 
         $totals = [
             'grand_total'     => $currTotal,
@@ -66,7 +146,7 @@ class AdminDashboardController extends Controller
             'completion_rate' => $currTotal > 0 ? round($completedAll / $currTotal * 100) : 0,
         ];
 
-        // ── 2. Per-type stats ─────────────────────────────────────────────────
+        // ── 3. Per-type stats ─────────────────────────────────────────────────
         $teleTotal  = (int) ($assigned->tele_total  ?? 0);
         $fieldTotal = (int) ($assigned->field_total ?? 0);
         $liveTotal  = (int) ($liveStats->live_total ?? 0);
@@ -93,7 +173,7 @@ class AdminDashboardController extends Controller
             'avg_per_dmo_day' => round($liveTotal / $dmoCount / $days, 1),
         ];
 
-        // ── 3. Chart: daily counts ────────────────────────────────────────────
+        // ── 4. Chart: daily counts ────────────────────────────────────────────
         $teleByDay  = PmjayAudit::whereBetween('created_at', [$from, $to])->where('audit_type', 'telephonic')
             ->selectRaw("DATE(created_at) AS d, COUNT(*) AS n")->groupBy('d')->pluck('n', 'd');
         $fieldByDay = PmjayAudit::whereBetween('created_at', [$from, $to])->where('audit_type', 'field')
@@ -101,13 +181,14 @@ class AdminDashboardController extends Controller
         $liveByDay  = LiveAudit::whereBetween('created_at', [$from, $to])
             ->selectRaw("DATE(created_at) AS d, COUNT(*) AS n")->groupBy('d')->pluck('n', 'd');
 
-        $chartDates  = collect(range($days - 1, 0))->map(fn($i) => now()->subDays($i)->format('Y-m-d'));
-        $chartLabels = $chartDates->map(fn($d) => Carbon::parse($d)->format('d M'));
-        $chartTele   = $chartDates->map(fn($d) => (int) ($teleByDay[$d]  ?? 0));
-        $chartField  = $chartDates->map(fn($d) => (int) ($fieldByDay[$d] ?? 0));
-        $chartLive   = $chartDates->map(fn($d) => (int) ($liveByDay[$d]  ?? 0));
+        $chartDates  = collect(range($days - 1, 0))->map(fn ($i) => now()->subDays($i)->format('Y-m-d'));
+        $chartLabels = $chartDates->map(fn ($d) => Carbon::parse($d)->format('d M'));
+        $chartTele   = $chartDates->map(fn ($d) => (int) ($teleByDay[$d]  ?? 0));
+        $chartField  = $chartDates->map(fn ($d) => (int) ($fieldByDay[$d] ?? 0));
+        $chartLive   = $chartDates->map(fn ($d) => (int) ($liveByDay[$d]  ?? 0));
+        $chartInfra  = $chartDates->map(fn ($d) => (int) ($infraByDay[$d] ?? 0)); // ← new series
 
-        // ── 4. District breakdown ─────────────────────────────────────────────
+        // ── 5. District breakdown ─────────────────────────────────────────────
         $districtData = PmjayAudit::whereBetween('pmjay_audits.created_at', [$from, $to])
             ->join('districts', 'districts.id', '=', 'pmjay_audits.district_id')
             ->selectRaw("
@@ -122,9 +203,9 @@ class AdminDashboardController extends Controller
             ->get();
 
         $liveByDistrict = LiveAudit::whereBetween('live_audits.created_at', [$from, $to])
-            ->join('users',         'users.id',         '=', 'live_audits.submitted_by')
+            ->join('users',         'users.id',              '=', 'live_audits.submitted_by')
             ->join('dmo_districts', 'dmo_districts.user_id', '=', 'users.id')
-            ->join('districts',     'districts.id',     '=', 'dmo_districts.district_id')
+            ->join('districts',     'districts.id',          '=', 'dmo_districts.district_id')
             ->selectRaw("districts.name AS district, COUNT(*) AS n")
             ->groupBy('districts.id', 'districts.name')
             ->pluck('n', 'district');
@@ -132,9 +213,10 @@ class AdminDashboardController extends Controller
         $districtLabels = $districtData->pluck('district');
         $districtTele   = $districtData->pluck('tele');
         $districtField  = $districtData->pluck('field_cnt');
-        $districtLive   = $districtLabels->map(fn($d) => (int) ($liveByDistrict[$d] ?? 0));
+        $districtLive   = $districtLabels->map(fn ($d) => (int) ($liveByDistrict[$d]    ?? 0));
+        
 
-        // ── 5. Heatmap: day × 3-hour bucket ──────────────────────────────────
+        // ── 6. Heatmap: day × 3-hour bucket ──────────────────────────────────
         $heatmapRaw = DB::table(function ($q) use ($from, $to) {
             $q->from('pmjay_audits')
               ->whereBetween('created_at', [$from, $to])
@@ -142,6 +224,13 @@ class AdminDashboardController extends Controller
               ->union(
                   DB::table('live_audits')
                     ->whereBetween('created_at', [$from, $to])
+                    ->selectRaw("created_at AS ts")
+              )
+              ->union(
+                  // Include infra audits in the activity heatmap
+                  DB::table('infrastructure_audits')
+                    ->whereBetween('created_at', [$from, $to])
+                    ->whereNull('deleted_at')
                     ->selectRaw("created_at AS ts")
               );
         }, 'combined')
@@ -164,12 +253,7 @@ class AdminDashboardController extends Controller
             $heatmapMax      = max($heatmapMax, (int) $row->n);
         }
 
-        // ── 6. Per-DMO stats ──────────────────────────────────────────────────
-        // PmjayAudit has no direct user FK — tele/field counts come from
-        // the child audit records (TelephonicAudit / FieldVisit) which link
-        // back to the DMO via submitted_by on those tables.
-        // Approach: group live_audits by submitted_by for live counts,
-        // and use raw subqueries for tele/field counts via the child tables.
+        // ── 7. Per-DMO stats ──────────────────────────────────────────────────
         $avatarPalette = [
             ['bg' => '#dbeafe', 'color' => '#1d4ed8'],
             ['bg' => '#d1fae5', 'color' => '#065f46'],
@@ -181,10 +265,6 @@ class AdminDashboardController extends Controller
             ['bg' => '#ecfdf5', 'color' => '#14532d'],
         ];
 
-        // Tele counts: telephonic_audits.submitted_by (or similar)
-        // Field counts: field_visits.submitted_by
-        // If those child tables have a submitted_by column, use them directly.
-        // Otherwise fall back to counting via district membership.
         $teleCounts = DB::table('telephonic_audits')
             ->join('pmjay_audits', 'pmjay_audits.id', '=', 'telephonic_audits.pmjay_audit_id')
             ->whereBetween('telephonic_audits.created_at', [$from, $to])
@@ -223,12 +303,16 @@ class AdminDashboardController extends Controller
         $dmoStats = User::role('dmo')
             ->with('districts')
             ->get()
-            ->map(function ($u, $i) use ($teleCounts, $teleDone, $fieldCounts, $fieldDone, $liveCounts, $avatarPalette) {
-                $tt   = (int) ($teleCounts[$u->id]  ?? 0);
-                $td   = (int) ($teleDone[$u->id]    ?? 0);
-                $ft   = (int) ($fieldCounts[$u->id] ?? 0);
-                $fd   = (int) ($fieldDone[$u->id]   ?? 0);
-                $live = (int) ($liveCounts[$u->id]  ?? 0);
+            ->map(function ($u, $i) use (
+                $teleCounts, $teleDone, $fieldCounts, $fieldDone,
+                $liveCounts, $infraCounts, $avatarPalette
+            ) {
+                $tt    = (int) ($teleCounts[$u->id]  ?? 0);
+                $td    = (int) ($teleDone[$u->id]    ?? 0);
+                $ft    = (int) ($fieldCounts[$u->id] ?? 0);
+                $fd    = (int) ($fieldDone[$u->id]   ?? 0);
+                $live  = (int) ($liveCounts[$u->id]  ?? 0);
+                $infra = (int) ($infraCounts[$u->id] ?? 0); // ← new column
 
                 return [
                     'name'            => $u->name,
@@ -238,8 +322,9 @@ class AdminDashboardController extends Controller
                     'field_total'     => $ft,
                     'field_completed' => $fd,
                     'live'            => $live,
-                    'total'           => $tt + $ft + $live,
-                    'completed'       => $td + $fd + $live,
+                    'infra'           => $infra,                          // ← new
+                    'total'           => $tt + $ft + $live + $infra,      // ← included
+                    'completed'       => $td + $fd + $live + $infra,      // ← included
                     'avatar_bg'       => $avatarPalette[$i % count($avatarPalette)]['bg'],
                     'avatar_color'    => $avatarPalette[$i % count($avatarPalette)]['color'],
                 ];
@@ -247,44 +332,31 @@ class AdminDashboardController extends Controller
             ->sortByDesc('total')
             ->values();
 
-        // ── 7. Recent activity feed ───────────────────────────────────────────
-        // PmjayAudit has no assignedTo — get DMO name from the child records
+        // ── 8. Recent activity feed ───────────────────────────────────────────
         $recentTele = DB::table('telephonic_audits')
-            ->join('pmjay_audits', 'pmjay_audits.id', '=', 'telephonic_audits.pmjay_audit_id')
-            ->join('pmjay_treatments', 'pmjay_treatments.id', '=', 'pmjay_audits.pmjay_treatment_id')
-            ->leftJoin('users', 'users.id', '=', 'telephonic_audits.submitted_by')
+            ->join('pmjay_audits',    'pmjay_audits.id',    '=', 'telephonic_audits.pmjay_audit_id')
+            ->join('pmjay_treatments','pmjay_treatments.id','=', 'pmjay_audits.pmjay_treatment_id')
+            ->leftJoin('users',       'users.id',           '=', 'telephonic_audits.submitted_by')
             ->whereBetween('telephonic_audits.created_at', [$from, $to])
-            ->select(
-                'users.name AS dmo_name',
-                'pmjay_treatments.patient_name',
-                'telephonic_audits.created_at'
-            )
-            ->orderByDesc('telephonic_audits.created_at')
-            ->limit(5)
-            ->get()
-            ->map(fn($r) => [
+            ->select('users.name AS dmo_name', 'pmjay_treatments.patient_name', 'telephonic_audits.created_at')
+            ->orderByDesc('telephonic_audits.created_at')->limit(5)->get()
+            ->map(fn ($r) => [
                 'type'          => 'telephonic',
-                'dmo_name'      => $r->dmo_name      ?? '—',
-                'patient_name'  => $r->patient_name  ?? null,
+                'dmo_name'      => $r->dmo_name     ?? '—',
+                'patient_name'  => $r->patient_name ?? null,
                 'hospital_name' => null,
                 'created_at'    => Carbon::parse($r->created_at),
             ]);
 
         $recentField = DB::table('field_visits')
-            ->join('pmjay_audits', 'pmjay_audits.id', '=', 'field_visits.audit_id')
-            ->join('pmjay_treatments', 'pmjay_treatments.id', '=', 'pmjay_audits.pmjay_treatment_id')
-            ->leftJoin('users', 'users.id', '=', 'field_visits.submitted_by')
+            ->join('pmjay_audits',    'pmjay_audits.id',    '=', 'field_visits.audit_id')
+            ->join('pmjay_treatments','pmjay_treatments.id','=', 'pmjay_audits.pmjay_treatment_id')
+            ->leftJoin('users',       'users.id',           '=', 'field_visits.submitted_by')
             ->whereBetween('field_visits.created_at', [$from, $to])
             ->where('pmjay_audits.status', 'completed')
-            ->select(
-                'users.name AS dmo_name',
-                'pmjay_treatments.patient_name',
-                'field_visits.created_at'
-            )
-            ->orderByDesc('field_visits.created_at')
-            ->limit(5)
-            ->get()
-            ->map(fn($r) => [
+            ->select('users.name AS dmo_name', 'pmjay_treatments.patient_name', 'field_visits.created_at')
+            ->orderByDesc('field_visits.created_at')->limit(5)->get()
+            ->map(fn ($r) => [
                 'type'          => 'field',
                 'dmo_name'      => $r->dmo_name     ?? '—',
                 'patient_name'  => $r->patient_name ?? null,
@@ -295,7 +367,7 @@ class AdminDashboardController extends Controller
         $recentLive = LiveAudit::with('submittedBy', 'hospital')
             ->whereBetween('created_at', [$from, $to])
             ->latest()->limit(5)->get()
-            ->map(fn($l) => [
+            ->map(fn ($l) => [
                 'type'          => 'live',
                 'dmo_name'      => $l->submittedBy?->name ?? '—',
                 'patient_name'  => $l->patient_name,
@@ -303,38 +375,43 @@ class AdminDashboardController extends Controller
                 'created_at'    => $l->created_at,
             ]);
 
-        $recentActivity = $recentTele->concat($recentField)->concat($recentLive)
+        // Infra feed already built above as $recentInfra
+
+        $recentActivity = $recentTele->concat($recentField)->concat($recentLive)->concat($recentInfra)
             ->sortByDesc('created_at')->take(12)->values();
 
-        // ── 8. Top hospitals ──────────────────────────────────────────────────
+        // ── 9. Top hospitals ──────────────────────────────────────────────────
         $topHospitalsField = PmjayAudit::whereBetween('pmjay_audits.created_at', [$from, $to])
             ->join('pmjay_treatments', 'pmjay_treatments.id', '=', 'pmjay_audits.pmjay_treatment_id')
-            ->join('hospitals', 'hospitals.id', '=', 'pmjay_treatments.hospital_id')
+            ->join('hospitals',        'hospitals.id',        '=', 'pmjay_treatments.hospital_id')
             ->selectRaw("hospitals.name AS name, COUNT(*) AS cnt")
             ->groupBy('hospitals.id', 'hospitals.name')
-            ->orderByDesc('cnt')
-            ->limit(7)
-            ->pluck('cnt', 'name');
+            ->orderByDesc('cnt')->limit(7)->pluck('cnt', 'name');
 
         $topHospitalsLive = LiveAudit::whereBetween('live_audits.created_at', [$from, $to])
-                ->join('hospitals', 'hospitals.id', '=', 'live_audits.hospital_id')
-                ->selectRaw('hospitals.name AS name, COUNT(*) AS cnt')
-                ->groupBy('hospitals.id', 'hospitals.name')
-                ->orderByDesc('cnt')
-                ->limit(7)
-                ->pluck('cnt', 'name');
+            ->join('hospitals', 'hospitals.id', '=', 'live_audits.hospital_id')
+            ->selectRaw('hospitals.name AS name, COUNT(*) AS cnt')
+            ->groupBy('hospitals.id', 'hospitals.name')
+            ->orderByDesc('cnt')->limit(7)->pluck('cnt', 'name');
+
+        // Infra audits store the hospital name directly (no FK to hospitals table)
+        // Group by the stored hospital_name string
+        $topHospitalsInfra = InfrastructureAudit::whereBetween('created_at', [$from, $to])
+            ->selectRaw("hospital_name AS name, COUNT(*) AS cnt")
+            ->groupBy('hospital_name')
+            ->orderByDesc('cnt')->limit(7)->pluck('cnt', 'name');
 
         $topHospitals = $topHospitalsField
             ->mergeRecursive($topHospitalsLive)
-            ->map(fn($v) => is_array($v) ? array_sum($v) : $v)
-            ->sortDesc()
-            ->take(7)
-            ->map(fn($count, $name) => ['name' => $name, 'count' => $count])
+            ->mergeRecursive($topHospitalsInfra)
+            ->map(fn ($v) => is_array($v) ? array_sum($v) : $v)
+            ->sortDesc()->take(7)
+            ->map(fn ($count, $name) => ['name' => $name, 'count' => $count])
             ->values();
 
         return view('admin.dashboard', compact(
-            'totals', 'tele', 'field', 'live',
-            'chartLabels', 'chartTele', 'chartField', 'chartLive',
+            'totals', 'tele', 'field', 'live', 'infra',
+            'chartLabels', 'chartTele', 'chartField', 'chartLive', 'chartInfra',
             'districtLabels', 'districtTele', 'districtField', 'districtLive',
             'heatmap', 'heatmapMax',
             'dmoStats',

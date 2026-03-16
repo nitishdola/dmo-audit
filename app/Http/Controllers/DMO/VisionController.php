@@ -17,16 +17,16 @@ class VisionController extends Controller
     public function validateBedPhoto(Request $request): JsonResponse
     {
 
-            return response()->json([
-                'valid'                  => true,
-                'face_count'             => 4,
-                'ai_bed_detected'        => true,
-                'ai_patient_detected'    => true,
-                'ai_labels'              => 'hospital, bed',
-                'ai_objects'             => 'hospital, bed',
-                'ai_validation_message'  => 'OK',
-                'message'                => 'OK Passed',
-            ]);
+            // return response()->json([
+            //     'valid'                  => true,
+            //     'face_count'             => 4,
+            //     'ai_bed_detected'        => true,
+            //     'ai_patient_detected'    => true,
+            //     'ai_labels'              => 'hospital, bed',
+            //     'ai_objects'             => 'hospital, bed',
+            //     'ai_validation_message'  => 'OK',
+            //     'message'                => 'OK Passed',
+            // ]);
 
         $client = new ImageAnnotatorClient([
                 'credentials' => storage_path(config('services.google_cloud.key_file')),

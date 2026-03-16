@@ -349,6 +349,12 @@
             Live Audits
         </a>
 
+        <a href="{{ route('admin.audits.infra-audit.index') }}"
+           class="nav-item {{ request()->routeIs('admin.audits.infra-audit.*') ? 'active' : '' }}">
+            <div class="nav-icon"><i class="fas fa-hospital-user"></i></div>
+            Infrastructure Audits
+        </a>
+
         <div class="nav-section-label">Operations</div>
 
         <a href="{{ route('admin.dmos.index') }}"

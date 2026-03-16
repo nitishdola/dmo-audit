@@ -10,11 +10,19 @@
             Real-time completion metrics · PMJAY Assam district dashboard
         </p>
     </div>
+    <div class="flex items-center gap-3">
     <a href="{{ route('dmo.audits.live-audit.create') }}"
        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-md hover:shadow-lg transition">
         <i class="fas fa-bolt"></i>
         Conduct Live Audit
     </a>
+
+    <a href="{{ route('dmo.audits.infra-audit.create') }}"
+       class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-md hover:shadow-lg transition">
+        <i class="fas fa-building"></i>
+        Infrastructure Audit
+    </a>
+</div>
 </div>
 @endsection
 
@@ -162,6 +170,34 @@
         <div class="relative mt-3 text-xs text-violet-500 flex items-center gap-1">
             <i class="fas fa-bolt"></i>
             Independent on-site verifications
+        </div>
+    </div>
+
+
+    <div class="bg-white rounded-3xl border border-violet-200/70 p-6 shadow-sm hover:shadow-md transition relative overflow-hidden">
+        {{-- subtle background accent --}}
+        <div class="absolute inset-0 bg-linear-to-br from-violet-50/60 to-transparent pointer-events-none rounded-3xl"></div>
+
+        <div class="relative flex items-start justify-between">
+            <div>
+                <span class="text-xs font-semibold text-violet-400 uppercase tracking-wider"> Infrastructure Audits</span>
+                <div class="text-3xl font-bold text-slate-800 mt-1 flex items-baseline gap-2">
+                    <a href="{{ route('dmo.audits.infra-audit.index') }}" class="hover:text-violet-600 transition">
+                        {{ $infrastructureAudits }}
+                    </a>
+                    <span class="text-sm font-normal text-slate-400 ml-1">conducted</span>
+                </div>
+            </div>
+            <div class="h-12 w-12 rounded-2xl bg-violet-100 text-violet-600 flex items-center justify-center text-xl shrink-0">
+                <i class="fas fa-hospital-user"></i>
+            </div>
+        </div>
+
+        
+
+        <div class="relative mt-3 text-xs text-violet-500 flex items-center gap-1">
+            <i class="fas fa-bolt"></i>
+            Hospital Infrastructure Audits
         </div>
     </div>
 

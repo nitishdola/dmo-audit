@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use App\Models\PmjayAudit;
 use App\Models\LiveAudit;
+use App\Models\Audits\InfrastructureAudit;
 use Illuminate\View\View;
 class DmoDashboardController extends Controller
 {
@@ -40,6 +41,8 @@ class DmoDashboardController extends Controller
             ")
             ->first();
 
+        $infrastructureAudits = InfrastructureAudit::where('submitted_by', $userId)->count();
+
         return view('dmo.dashboard', [
             'total_assigned'       => (int) ($counts->total_assigned       ?? 0),
             'total_completed'      => (int) ($counts->total_completed      ?? 0),
@@ -52,6 +55,8 @@ class DmoDashboardController extends Controller
 
             'total_live_audits'    => (int) ($liveStats->total_live_audits    ?? 0),
             'total_live_ai_passed' => (int) ($liveStats->total_live_ai_passed ?? 0),
+
+            'infrastructureAudits' => (int) ($infrastructureAudits ?? 0),
         ]);
     }
 }
