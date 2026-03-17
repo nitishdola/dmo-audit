@@ -18,6 +18,8 @@ use App\Http\Controllers\Admin\AdminTelephonicAuditController;
 use App\Http\Controllers\Admin\AdminFieldVisitController;
 use App\Http\Controllers\Admin\AdminLiveAuditController;
 use App\Http\Controllers\Admin\AdminInfrastructureAuditController;
+use App\Http\Controllers\Admin\AuditSummaryImageController;
+use App\Http\Controllers\Admin\AuditSummaryController;
 
 
 /*
@@ -58,6 +60,22 @@ Route::middleware(['auth', 'role:admin'])
      ->name('admin.')
      ->group(function () {
          Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+         Route::prefix('audit-summary')->name('audit-summary.')->group(function () {
+
+               // // View in browser — use this URL as the image src for WhatsApp Business API
+               // // or to test layout: GET /admin/audit-summary/image
+               // Route::get('image',   [AuditSummaryImageController::class, 'image'])   ->name('image');
+
+               // // Force browser file download: GET /admin/audit-summary/download
+               // Route::get('download',[AuditSummaryImageController::class, 'download'])->name('download');
+
+               // // Raw HTML preview (no Browsershot — for layout checking in browser):
+               // // GET /admin/audit-summary/preview
+               // Route::get('preview', [AuditSummaryImageController::class, 'preview']) ->name('preview');
+
+               Route::get('send-whatsapp',  [AuditSummaryController::class, 'sendWhatsApp'])->name('send-whatsapp');
+          });
 
           Route::get('/pmjay', [PmjayController::class,'index'])
           ->name('pmjay.index');

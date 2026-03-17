@@ -44,4 +44,11 @@ return [
         'key_file'   => env('GOOGLE_CLOUD_KEY_FILE'), // absolute path to JSON key
     ],
 
+    'twilio' => [
+        'sid'            => env('TWILIO_ACCOUNT_SID'),
+        'token'          => env('TWILIO_AUTH_TOKEN'),
+        'whatsapp_from'  => env('TWILIO_WHATSAPP_FROM'),
+        'template_sid'   => env('TWILIO_TEMPLATE_SID', 'HXf12902361b6d55bc0746b2f5274ae3c9'),
+    ],
+
 ];
