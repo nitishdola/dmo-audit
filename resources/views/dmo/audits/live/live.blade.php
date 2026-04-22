@@ -538,7 +538,7 @@
         <div id="camera-section" class="obs-card" style="border:2px solid #a78bfa; background:#faf5ff;">
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                    <span class="obs-label">On-bed patient photograph collected with PMJAY card <span class="text-rose-500">*</span></span>
+                    <span class="obs-label">On-bed patient photograph collected <span class="text-rose-500">*</span></span>
                     <p class="text-xs text-slate-500 mt-0.5">AI will verify: hospital bed + patient visible. GPS &amp; timestamp will be stamped automatically.</p>
                 </div>
                 <div class="flex gap-2 flex-wrap">
