@@ -39,6 +39,12 @@ class StoreInfraAuditRequest extends FormRequest
 
             // AI banner
             'banner_photo'                 => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
+
+            // Additional files
+            'additional_files'             => 'nullable|array|max:10',
+            'additional_files.*'           => 'nullable|file|max:20480',
+            'additional_file_names'        => 'nullable|array',
+            'additional_file_names.*'      => 'nullable|string|max:255',
             'ai_banner_pass'               => 'nullable|boolean',
             'ai_pmjay_branding'            => 'nullable|boolean',
             'ai_banner_visible'            => 'nullable|boolean',

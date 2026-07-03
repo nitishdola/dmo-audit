@@ -14,6 +14,7 @@ class PmjayTreatment extends Model
         'patient_name',
         'patient_district_id',
         'member_id',
+        'address',
 
         'policy_code',
         'preauth_init_date',
@@ -40,9 +41,22 @@ class PmjayTreatment extends Model
         return $this->belongsTo(Hospital::class);
     }
 
+    public function patientDistrict()
+    {
+        return $this->belongsTo(District::class);
+    }
+
     public function audit()
     {
-        return $this->hasOne(PmjayAudit::class);
+        return $this->hasOne(PmjayAudit::class, 'pmjay_treatment_id');
+    }
+
+    public function telephonicAudit()
+    {
+        return $this->hasOne(
+            \App\Models\Audits\TelephonicAudit::class,
+            'pmjay_treatment_id'
+        );
     }
 
 }

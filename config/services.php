@@ -44,6 +44,10 @@ return [
         'key_file'   => env('GOOGLE_CLOUD_KEY_FILE'), // absolute path to JSON key
     ],
 
+    'anthropic' => [
+        'api_key' => env('ANTHROPIC_API_KEY'),
+    ],
+
     'twilio' => [
         'sid'            => env('TWILIO_ACCOUNT_SID'),
         'token'          => env('TWILIO_AUTH_TOKEN'),

@@ -21,10 +21,15 @@ class InfraAuditService
     /**
      * Persist a new InfraAudit record from validated request data.
      */
-    public function store(array $data, ?UploadedFile $bannerPhoto): InfrastructureAudit
-    {
-        $bannerPath = $bannerPhoto ? $this->storeBannerPhoto($bannerPhoto) : null;
-        $payload    = $this->buildPayload($data, $bannerPath);
+    public function store(
+        array $data,
+        ?UploadedFile $bannerPhoto,
+        array $additionalFiles = [],
+        array $additionalFileNames = [],
+    ): InfrastructureAudit {
+        $bannerPath      = $bannerPhoto ? $this->storeBannerPhoto($bannerPhoto) : null;
+        $additionalPaths = $this->storeAdditionalFiles($additionalFiles);
+        $payload         = $this->buildPayload($data, $bannerPath, $additionalPaths, $additionalFileNames);
 
         return InfrastructureAudit::create($payload);
     }
@@ -32,22 +37,30 @@ class InfraAuditService
     /**
      * Update an existing InfraAudit record.
      * Only replaces the banner photo if a new file is provided.
+     * New additional files are appended to any already stored.
      */
-    public function update(InfraAudit $infraAudit, array $data, ?UploadedFile $bannerPhoto): InfraAudit
-    {
-        $bannerPath = $infraAudit->banner_photo_path; // keep existing by default
+    public function update(
+        InfrastructureAudit $infraAudit,
+        array $data,
+        ?UploadedFile $bannerPhoto,
+        array $additionalFiles = [],
+        array $additionalFileNames = [],
+    ): InfrastructureAudit {
+        $bannerPath = $infraAudit->banner_photo_path;
 
         if ($bannerPhoto) {
-            // Remove the old file from storage before saving the new one
             if ($infraAudit->banner_photo_path) {
                 Storage::disk('public')->delete($infraAudit->banner_photo_path);
             }
             $bannerPath = $this->storeBannerPhoto($bannerPhoto);
         }
 
-        $payload = $this->buildPayload($data, $bannerPath);
+        $newPaths    = $this->storeAdditionalFiles($additionalFiles);
+        $mergedPaths = array_merge($infraAudit->additional_file_paths ?? [], $newPaths);
+        $mergedNames = array_merge($infraAudit->additional_file_names ?? [], $additionalFileNames);
 
-        // Never overwrite the original submitter on an edit
+        $payload = $this->buildPayload($data, $bannerPath, $mergedPaths, $mergedNames);
+
         unset($payload['submitted_by']);
 
         $infraAudit->update(array_filter($payload, fn ($v) => !is_null($v)));
@@ -226,7 +239,7 @@ class InfraAuditService
     }
 
 
-    public function verifyBannerWithVision(string $base64): array
+    public function verifyBannerWithVision_GOOGLE(string $base64): array
     {
         $credentialsPath = storage_path(config('services.google_cloud.key_file'));
 
@@ -357,11 +370,123 @@ class InfraAuditService
         }
     }
 
+    public function verifyBannerWithVision(string $base64): array
+    {
+        $apiKey = config('services.anthropic.api_key');
+
+        if (! $apiKey) {
+            Log::warning('InfraAuditService: Anthropic API key not configured – skipping Vision check.');
+            return $this->aiSkipResponse('Anthropic API key not configured.');
+        }
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'x-api-key'         => $apiKey,
+                'anthropic-version' => '2023-06-01',
+                'Content-Type'      => 'application/json',
+            ])->post('https://api.anthropic.com/v1/messages', [
+                'model'      => 'claude-haiku-4-5',   // fast + cheap; swap to sonnet for accuracy
+                'max_tokens' => 512,
+                'messages'   => [[
+                    'role'    => 'user',
+                    'content' => [
+                        [
+                            'type'   => 'image',
+                            'source' => [
+                                'type'       => 'base64',
+                                'media_type' => 'image/jpeg',   // adjust if you detect mime type
+                                'data'       => $base64,
+                            ],
+                        ],
+                        [
+                            'type' => 'text',
+                            'text' => <<<PROMPT
+                            Analyse this hospital image and respond ONLY with a valid JSON object — no markdown, no explanation.
+
+                            Return exactly this structure:
+                            {
+                            "is_banner": true/false,
+                            "is_readable": true/false,
+                            "ocr_keywords": ["list","of","detected","words"],
+                            "summary": "one sentence verdict",
+                            "details": "two to three sentence explanation"
+                            }
+
+                            Rules:
+                            - is_banner: true if the image shows a hospital banner, signboard, hoarding, promotional board, flex, or any similar signage (even partially visible). Also true if OCR finds words like hospital, health, clinic, government, govt, scheme, care, child, polyclinic.
+                            - is_readable: true if the banner text is clearly legible and lighting is adequate.
+                            - ocr_keywords: key words you can read from the image (lower-case).
+                            - summary: short pass/fail verdict.
+                            - details: explain what you saw.
+                            PROMPT,
+                        ],
+                    ],
+                ]],
+            ]);
+
+            if (! $response->successful()) {
+                Log::error('Anthropic API error: ' . $response->body());
+                return $this->aiErrorResponse('Anthropic API error: ' . $response->status());
+            }
+
+            $text = $response->json('content.0.text', '');
+
+            // Strip accidental markdown fences
+            $text = preg_replace('/^```json\s*/i', '', trim($text));
+            $text = preg_replace('/```$/', '', $text);
+
+            $parsed = json_decode(trim($text), true);
+
+            if (! is_array($parsed)) {
+                Log::error('InfraAuditService: Anthropic returned non-JSON: ' . $text);
+                return $this->aiErrorResponse('Unexpected response from Anthropic API.');
+            }
+
+            $isBanner   = (bool) ($parsed['is_banner']   ?? false);
+            $isReadable = (bool) ($parsed['is_readable']  ?? false);
+            $pass       = $isBanner && $isReadable;
+
+            [$summary, $details] = $this->buildBannerNarrative(
+                $pass, $isBanner, $isReadable,
+                $parsed['ocr_keywords'] ?? [], [], ''
+            );
+
+            // Prefer Claude's own summary/details if they look usable
+            if (! empty($parsed['summary'])) $summary = $parsed['summary'];
+            if (! empty($parsed['details'])) $details = $parsed['details'];
+
+            return [
+                'ok'      => true,
+                'pass'    => $pass,
+                'visible' => $isReadable,
+                'summary' => $summary,
+                'details' => $details,
+                'labels'  => $parsed['ocr_keywords'] ?? [],
+                'objects' => [],
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('InfraAuditService Anthropic error: ' . $e->getMessage());
+            return $this->aiErrorResponse('Anthropic API error: ' . $e->getMessage());
+        }
+    }
+
     // ── Private helpers ────────────────────────────────────────────────────
 
     private function storeBannerPhoto(UploadedFile $file): string
     {
         return $file->store('infra-audits/banners', 'public');
+    }
+
+    private function storeAdditionalFiles(array $files): array
+    {
+        $paths = [];
+        foreach ($files as $file) {
+            if ($file instanceof UploadedFile && $file->isValid()) {
+                $paths[] = $file->store('infra-audits/additional', 'public');
+            }
+        }
+        return $paths;
     }
 
     /**
@@ -409,8 +534,12 @@ class InfraAuditService
         return [$summary, implode(' ', $details)];
     }
 
-    private function buildPayload(array $data, ?string $bannerPath): array
-    {
+    private function buildPayload(
+        array $data,
+        ?string $bannerPath,
+        array $additionalPaths = [],
+        array $additionalFileNames = [],
+    ): array {
         return array_merge(
             [
                 'submitted_by'       => Auth::id(),
@@ -454,7 +583,11 @@ class InfraAuditService
                 'specialists_available',    'specialists_remarks',
                 'hr_other_remarks',
             ]),
-            ['banner_photo_path' => $bannerPath],
+            [
+                'banner_photo_path'     => $bannerPath,
+                'additional_file_paths' => $additionalPaths ?: null,
+                'additional_file_names' => $additionalFileNames ?: null,
+            ],
         );
     }
 

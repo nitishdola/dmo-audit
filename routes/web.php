@@ -12,6 +12,9 @@ use App\Http\Controllers\DMO\AuditController;
 use App\Http\Controllers\DMO\VisionController;
 use App\Http\Controllers\DMO\LiveAuditController;
 use App\Http\Controllers\DMO\InfrastructureAuditController;
+use App\Http\Controllers\DMO\TelephonicAuditController;
+use App\Http\Controllers\DMO\MedicalAuditController;
+use App\Http\Controllers\DMO\BeneficiaryAuditController;
 
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminTelephonicAuditController;
@@ -31,22 +34,16 @@ use App\Http\Controllers\Admin\AuditSummaryController;
 
 // Redirect root to login
 Route::get('/', fn () => redirect()->route('auth.login'));
-Route::get('login', [AuthController::class, 'showLogin'])->name('login');
 
 // ─── Authentication Routes (guests only) ─────────────────────────────────────
-
 Route::middleware('guest')->prefix('auth')->name('auth.')->group(function () {
-
     Route::get('login', [AuthController::class, 'showLogin'])->name('login');
 
-    // Step 2: Verify OTP
-    Route::post('/send-otp', [AuthController::class, 'sendOtp'])->name('send.otp');
-    Route::get('/verify', [AuthController::class, 'showVerifyForm'])
-    ->name('verify.form');
+    Route::post('send-otp', [AuthController::class, 'sendOtp'])->name('send.otp');
+    Route::get('verify', [AuthController::class, 'showVerifyForm'])->name('verify.form');
     Route::post('verify', [AuthController::class, 'verifyOtp'])->name('otp.verify');
     Route::post('resend', [AuthController::class, 'resendOtp'])->name('otp.resend');
 });
-
 // ─── Logout ───────────────────────────────────────────────────────────────────
 
 
@@ -172,21 +169,31 @@ Route::middleware(['auth', 'role:dmo'])
 
                Route::post('/validate-bed-photo', [VisionController::class, 'validateBedPhoto'])
                     ->name('validate.bed.photo');
+               
+               Route::get('/', [AuditController::class, 'viewAllAudits'])->name('all');
+               Route::get('/view/{id}', [AuditController::class, 'viewAudit'])->name('view');
 
                Route::prefix('telephonic')
                     ->name('telephonic.')
                     ->group(function () {
-                         Route::get('/', [AuditController::class, 'telephonicAudits'])->name('all');
-                         Route::get('/view/{id}', [AuditController::class, 'telephonicAuditForm'])->name('view');
-                         Route::post('/view/{id}', [AuditController::class, 'storeTelephonicObservation'])->name('store');
+                         
+                         Route::get('/', [TelephonicAuditController::class, 'viewAudits'])->name('all');
+                         Route::get('/view/{id}', [TelephonicAuditController::class, 'telephonicAuditForm'])->name('view');
+                         Route::post('/view/{id}', [TelephonicAuditController::class, 'storeTelephonicObservation'])->name('store');
                });
 
-               Route::prefix('field')
-                    ->name('field.')
+               Route::prefix('medical')
+                    ->name('medical.')
                     ->group(function () {
-                         Route::get('/', [AuditController::class, 'fieldAudits'])->name('all');
-                         Route::get('/view/{id}', [AuditController::class, 'fieldAuditForm'])->name('view');
-                         Route::post('/view/{id}', [AuditController::class, 'storeFieldVisit'])->name('store');
+                         Route::get('/view/{id}', [MedicalAuditController::class, 'medicalAuditForm'])->name('view');
+                         Route::post('/view/{id}', [MedicalAuditController::class, 'storeMedicalAudit'])->name('store');
+               });
+
+               Route::prefix('beneficiary-audit')
+                    ->name('beneficiary_audit.')
+                    ->group(function () {
+                         Route::get('/view/{id}', [BeneficiaryAuditController::class, 'beneficiaryyAuditForm'])->name('view');
+                         Route::post('/view/{id}', [BeneficiaryAuditController::class, 'storeBeneficiaryAudit'])->name('store');
                });
 
 

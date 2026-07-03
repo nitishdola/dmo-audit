@@ -4,200 +4,185 @@ namespace App\Http\Controllers\DMO;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Google\Cloud\Vision\V1\Client\ImageAnnotatorClient;
-use Google\Cloud\Vision\V1\BatchAnnotateImagesRequest;
-use Google\Cloud\Vision\V1\AnnotateImageRequest;
-use Google\Cloud\Vision\V1\Image;
-use Google\Cloud\Vision\V1\Feature;
-use Google\Cloud\Vision\V1\Feature\Type;
-use Illuminate\Http\JsonResponse; 
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
 class VisionController extends Controller
 {
+    // ── Shared helper ──────────────────────────────────────────────────────
 
+    /**
+     * Send a base64 image + prompt to Claude and return the parsed JSON array.
+     * Throws on network/API failure so callers can catch and return 500.
+     */
+    private function askClaude(string $base64, string $prompt): array
+    {
+        $response = Http::withHeaders([
+            'x-api-key'         => config('services.anthropic.api_key'),
+            'anthropic-version' => '2023-06-01',
+            'Content-Type'      => 'application/json',
+        ])->post('https://api.anthropic.com/v1/messages', [
+            'model'      => 'claude-haiku-4-5',
+            'max_tokens' => 512,
+            'messages'   => [[
+                'role'    => 'user',
+                'content' => [
+                    [
+                        'type'   => 'image',
+                        'source' => [
+                            'type'       => 'base64',
+                            'media_type' => 'image/jpeg',
+                            'data'       => $base64,
+                        ],
+                    ],
+                    ['type' => 'text', 'text' => $prompt],
+                ],
+            ]],
+        ]);
+
+        if (! $response->successful()) {
+            throw new \RuntimeException('Anthropic API error: HTTP ' . $response->status());
+        }
+
+        $text = $response->json('content.0.text', '');
+
+        // Strip accidental markdown fences
+        $text = preg_replace('/^```json\s*/i', '', trim($text));
+        $text = preg_replace('/```$/m', '', $text);
+
+        $parsed = json_decode(trim($text), true);
+
+        if (! is_array($parsed)) {
+            throw new \RuntimeException('Non-JSON response from Anthropic: ' . $text);
+        }
+
+        return $parsed;
+    }
+
+    // ── Routes ─────────────────────────────────────────────────────────────
+
+    /**
+     * POST /dmo/vision/validate-bed-photo
+     *
+     * Checks that the image contains:
+     *   1. At least 2 visible people (beneficiary + DMO/staff)
+     *   2. A hospital bed with the beneficiary lying on it
+     */
     public function validateBedPhoto(Request $request): JsonResponse
     {
-
-        $client = new ImageAnnotatorClient([
-                'credentials' => storage_path(config('services.google_cloud.key_file')),
-                'transport'   => 'rest',
-            ]); 
-
         $request->validate(['image' => 'required|string']);
 
-        $base64     = preg_replace('/^data:image\/\w+;base64,/', '', $request->input('image'));
-        $imageBytes = base64_decode($base64);
+        $base64 = preg_replace('/^data:image\/\w+;base64,/', '', $request->input('image'));
+
+        $prompt = <<<PROMPT
+        Analyse this hospital image and respond ONLY with a valid JSON object — no markdown, no explanation.
+
+        Return exactly this structure:
+        {
+          "person_count": <integer — total visible people including partially visible>,
+          "bed_detected": <true/false — is there a hospital bed, stretcher, or gurney in frame?>,
+          "patient_on_bed": <true/false — is at least one person lying/sitting on the bed?>,
+          "labels": ["list","of","relevant","scene","labels"],
+          "objects": ["list","of","physical","objects","detected"]
+        }
+
+        Definitions:
+        - Count every visible human figure (face, silhouette, partial body) as a person.
+        - bed_detected: true for hospital bed, stretcher, gurney, mattress on a frame in a clinical setting.
+        - patient_on_bed: true if a person appears to be a patient resting on the bed.
+        PROMPT;
 
         try {
+            $data = $this->askClaude($base64, $prompt);
 
-            $client = new ImageAnnotatorClient([
-                'credentials' => storage_path(config('services.google_cloud.key_file')),
-                'transport'   => 'rest',
-            ]);
+            $personCount  = (int)  ($data['person_count']  ?? 0);
+            $bedDetected  = (bool) ($data['bed_detected']  ?? false);
+            $twoPersons   = $personCount >= 2;
+            $labels       = $data['labels']  ?? [];
+            $objects      = $data['objects'] ?? [];
 
-            $image = new Image();
-            $image->setContent($imageBytes);
-
-            // Three features in one API call — keeps cost identical to validatePhoto()
-            $faceFeature = new Feature(); 
-            $faceFeature->setType(Type::FACE_DETECTION);
-            $faceFeature->setMaxResults(10);
-
-            $labelFeature = new Feature();
-            $labelFeature->setType(Type::LABEL_DETECTION);
-            $labelFeature->setMaxResults(30);
-
-            $objectFeature = new Feature();
-            $objectFeature->setType(Type::OBJECT_LOCALIZATION);
-            $objectFeature->setMaxResults(20);
-
-            $annotateRequest = new AnnotateImageRequest();
-            $annotateRequest->setImage($image);
-            $annotateRequest->setFeatures([$faceFeature, $labelFeature, $objectFeature]);
-
-            $batchRequest = new BatchAnnotateImagesRequest();
-            $batchRequest->setRequests([$annotateRequest]);
-
-            $response = $client->batchAnnotateImages($batchRequest);
-            $result   = $response->getResponses()[0]; 
-            $client->close();
-
-            // ── Face count ────────────────────────────────────────────────────────
-            $faceCount = count($result->getFaceAnnotations());
-
-            // ── Labels (scene context) ────────────────────────────────────────────
-            $labels = [];
-            foreach ($result->getLabelAnnotations() as $label) {
-                if ($label->getScore() >= 0.50) {
-                    $labels[] = strtolower($label->getDescription());
-                }
-            }
-
-            // ── Objects (physical items in frame) ─────────────────────────────────
-            $objects = [];
-            foreach ($result->getLocalizedObjectAnnotations() as $obj) {
-                if ($obj->getScore() >= 0.50) {
-                    $objects[] = strtolower($obj->getName());
-                }
-            }
-
-            $allDetected = array_merge($labels, $objects);
-
-            // ── Check 1: at least 2 people ────────────────────────────────────────
-            // faceCount covers clearly visible faces; supplement with person-class
-            // objects for partially occluded figures (e.g. DMO standing sideways)
-            $personObjects  = ['person', 'man', 'woman', 'boy', 'girl', 'human face', 'child'];
-            $personObjCount = count(array_filter($objects, fn($o) => in_array($o, $personObjects, true)));
-            $effectiveCount = max($faceCount, $personObjCount);
-            $twoPersons     = $effectiveCount >= 2;
-
-            // ── Check 2: one person is a bed-bound beneficiary ────────────────────
-            // Hospital bed confirmed by OBJECT_LOCALIZATION (most reliable) or
-            // LABEL_DETECTION scene labels (fallback for wide-angle shots)
-            $bedObjects    = ['bed', 'stretcher', 'mattress', 'infant bed'];
-            $hospitalLabels = [
-                'hospital', 'ward', 'patient', 'medical', 'health care', 'healthcare',
-                'inpatient', 'bed', 'stretcher', 'gurney', 'mattress', 'pillow',
-                'blanket', 'drip', 'iv', 'saline', 'nurse', 'physician',
-            ];
-
-            
-            $bedDetected = !empty(array_intersect($objects, $bedObjects))
-                        || !empty(array_intersect($labels,  $hospitalLabels));
-
-
-            // ── Build verdict ─────────────────────────────────────────────────────
             $errors = [];
-
-            if (!$twoPersons) {
-                $errors[] = $faceCount === 0 && $personObjCount === 0
+            if (! $twoPersons) {
+                $errors[] = $personCount === 0
                     ? 'No people detected. At least 2 must be visible (beneficiary + DMO).'
                     : 'Only 1 person detected. The DMO and the beneficiary must both be visible.';
             }
-
-            if (!$bedDetected) {
+            if (! $bedDetected) {
                 $errors[] = 'No hospital bed detected. Photo must show the beneficiary lying on a hospital bed.';
             }
 
-            
-
             $valid   = $twoPersons && $bedDetected;
             $message = $valid
-                ? "✓ {$effectiveCount} people detected · Beneficiary on bed confirmed "
+                ? "✓ {$personCount} people detected · Beneficiary on bed confirmed"
                 : implode(' ', $errors);
 
             return response()->json([
-                'valid'                  => $valid,
-                'face_count'             => $faceCount,
-                'ai_bed_detected'        => $bedDetected,
-                'ai_patient_detected'    => $twoPersons,
-                'ai_labels'              => $labels,
-                'ai_objects'             => $objects,
-                'ai_validation_message'  => $message,
-                'message'                => $message,
+                'valid'                 => $valid,
+                'face_count'            => $personCount,
+                'ai_bed_detected'       => $bedDetected,
+                'ai_patient_detected'   => $twoPersons,
+                'ai_labels'             => $labels,
+                'ai_objects'            => $objects,
+                'ai_validation_message' => $message,
+                'message'               => $message,
             ]);
 
         } catch (\Exception $e) {
+            Log::error('VisionController::validateBedPhoto — ' . $e->getMessage());
+            $msg = 'Vision API error: ' . $e->getMessage();
             return response()->json([
-                'valid'                  => false,
-                'face_count'             => 0,
-                'ai_bed_detected'        => false,
-                'ai_patient_detected'    => false,
-                'ai_labels'              => [],
-                'ai_objects'             => [],
-                'ai_validation_message'  => 'Vision API error: ' . $e->getMessage(),
-                'message'                => 'Vision API error: ' . $e->getMessage(),
+                'valid'                 => false,
+                'face_count'            => 0,
+                'ai_bed_detected'       => false,
+                'ai_patient_detected'   => false,
+                'ai_labels'             => [],
+                'ai_objects'            => [],
+                'ai_validation_message' => $msg,
+                'message'               => $msg,
             ], 500);
         }
     }
 
-    public function validatePhoto(Request $request)
+    /**
+     * POST /dmo/vision/validate-photo
+     *
+     * Simpler check: at least 2 people visible (used for non-bed photos).
+     */
+    public function validatePhoto(Request $request): JsonResponse
     {
         $request->validate(['image' => 'required|string']);
 
-        $base64     = preg_replace('/^data:image\/\w+;base64,/', '', $request->input('image'));
-        $imageBytes = base64_decode($base64);
+        $base64 = preg_replace('/^data:image\/\w+;base64,/', '', $request->input('image'));
+
+        $prompt = <<<PROMPT
+        Analyse this image and respond ONLY with a valid JSON object — no markdown, no explanation.
+
+        Return exactly this structure:
+        {
+          "person_count": <integer — total number of visible people, including partial figures>
+        }
+        PROMPT;
 
         try {
+            $data  = $this->askClaude($base64, $prompt);
+            $count = (int) ($data['person_count'] ?? 0);
+            $valid = $count >= 2;
 
-            $client = new ImageAnnotatorClient([
-                'credentials' => storage_path(config('services.google_cloud.key_file')),
-                'transport'   => 'rest',
-            ]);
-
-            $image = new Image();
-            $image->setContent($imageBytes);
-
-            $feature = new Feature();
-            $feature->setType(Type::FACE_DETECTION);
-            $feature->setMaxResults(10);
-
-            $annotateRequest = new AnnotateImageRequest();
-            $annotateRequest->setImage($image);
-            $annotateRequest->setFeatures([$feature]);
-
-            $batchRequest = new BatchAnnotateImagesRequest();
-            $batchRequest->setRequests([$annotateRequest]);
-
-            $response = $client->batchAnnotateImages($batchRequest);
-            $faces    = $response->getResponses()[0]->getFaceAnnotations();
-            $count    = count($faces);
-
-            $client->close();
-
-
-            
+            $message = $valid
+                ? "✓ {$count} people detected"
+                : ($count === 0
+                    ? 'No faces detected. Please ensure people are visible in the photo.'
+                    : 'Only 1 person detected. The photo must include at least 2 people.');
 
             return response()->json([
-                'valid'      => $count >= 2,
+                'valid'      => $valid,
                 'face_count' => $count,
-                'message'    => $count >= 2
-                    ? "✓ {$count} people detected"
-                    : ($count === 0
-                        ? 'No faces detected. Please ensure people are visible in the photo.'
-                        : 'Only 1 person detected. The photo must include at least 2 people.'),
+                'message'    => $message,
             ]);
 
         } catch (\Exception $e) {
+            Log::error('VisionController::validatePhoto — ' . $e->getMessage());
             return response()->json([
                 'valid'   => false,
                 'message' => 'Vision API error: ' . $e->getMessage(),

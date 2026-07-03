@@ -7,16 +7,16 @@
         <i class="fas fa-arrow-left mr-1 text-xs"></i> Back to audits
     </a>
     <span class="text-slate-300">/</span>
-    <span class="text-slate-600 font-medium">Medical Audit</span>
+    <span class="text-slate-600 font-medium">Field Visit</span>
 </div>
 
 <div class="mb-7">
     <h2 class="text-xl md:text-3xl font-semibold text-slate-800 tracking-tight flex items-center gap-2">
         <i class="fas fa-hospital-user text-emerald-600"></i>
-        Medical Audit
+        Field Visit
     </h2>
     <p class="text-sm text-slate-500 mt-1">
-        Physical hospital verification · PMJAY Assam audit
+        Field Visit · PMJAY Assam audit
     </p>
 </div>
 
@@ -373,7 +373,7 @@
     @endif
 
     {{-- Site Photograph --}}
-    <div class="section-badge"><span>Site Photograph</span></div>
+    <div class="section-badge"><span>Site Photograph Capti</span></div>
     @if($fv?->photo_path)
     <div class="flex flex-col gap-3">
         <div class="ro-photo">
@@ -576,16 +576,19 @@
                 <span id="gps-text">Acquiring GPS…</span>
             </div>
             <div id="viewfinder-wrap" style="display:none; flex-direction:column; gap:.75rem;">
-                <div class="relative">
-                    <video id="camera-preview" autoplay playsinline muted></video>
-                    <div id="live-overlay" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.5);color:#fff;font-size:.68rem;padding:.4rem .65rem;border-radius:0 0 .875rem .875rem;backdrop-filter:blur(2px);">
-                        <span id="live-coords">Waiting for GPS…</span>
+                <div class="ai-upload-box" id="upload-drop-zone"
+                    style="border:2px dashed #e2e8f0; border-radius:.875rem; padding:2rem; text-align:center; cursor:pointer; transition:border-color .2s,background .2s; background:#f8fafc; position:relative;">
+                    <input type="file" id="upload-file-input" accept="image/*"
+                        style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;" />
+                    <div style="width:3rem;height:3rem;background:#d1fae5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto .75rem;color:#059669;font-size:1.1rem;">
+                        <i class="fas fa-cloud-arrow-up"></i>
                     </div>
+                    <p class="text-sm font-bold text-slate-700">Upload Site Photo</p>
+                    <p class="text-xs text-slate-500 mt-1">JPG, PNG, WEBP · max 10 MB · drag &amp; drop or click to browse</p>
                 </div>
-                <div class="flex gap-2 flex-wrap">
-                    <button type="button" id="btn-snap" class="cam-btn cam-btn-dark"><i class="fas fa-circle-dot"></i> Capture Photo</button>
-                    <button type="button" id="btn-close-cam" class="cam-btn cam-btn-danger"><i class="fas fa-times"></i> Cancel</button>
-                </div>
+                <button type="button" id="btn-close-cam" class="cam-btn cam-btn-danger" style="align-self:flex-start;">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
             </div>
             <div id="photo-preview-wrap">
                 <img id="photo-preview-img" src="" alt="Captured photo">
@@ -598,8 +601,12 @@
             <img id="map-thumb" src="" alt="Location map">
 
             <div class="flex gap-2 flex-wrap">
-                <button type="button" id="btn-open-cam" class="cam-btn cam-btn-dark"><i class="fas fa-camera"></i> Open Camera</button>
-                <button type="button" id="btn-retake" class="cam-btn cam-btn-danger" style="display:none;"><i class="fas fa-redo"></i> Retake</button>
+                <button type="button" id="btn-open-cam" class="cam-btn cam-btn-dark">
+                    <i class="fas fa-upload"></i> Upload Photo
+                </button>
+                <button type="button" id="btn-retake" class="cam-btn cam-btn-danger" style="display:none;">
+                <i class="fas fa-redo"></i> Re-upload
+            </button>
             </div>
 
             <p id="photo-error" class="text-rose-600 text-xs font-medium" style="display:none;"></p>
@@ -718,17 +725,14 @@ function selectTT(val) {
 (function () {
     const GMAPS_KEY = '{{ config("services.google_maps.key") }}';
 
-    let gpsReady = false, gpsLat = null, gpsLng = null, gpsAddr = '', mediaStream = null, photoTaken = false;
+    let gpsReady = false, gpsLat = null, gpsLng = null, gpsAddr = '', photoTaken = false;
 
     const gpsPill        = document.getElementById('gps-pill');
     const gpsText        = document.getElementById('gps-text');
-    const liveCoords     = document.getElementById('live-coords');
     const viewfinderWrap = document.getElementById('viewfinder-wrap');
-    const video          = document.getElementById('camera-preview');
     const canvas         = document.getElementById('capture-canvas');
     const btnOpenCam     = document.getElementById('btn-open-cam');
     const btnCloseCam    = document.getElementById('btn-close-cam');
-    const btnSnap        = document.getElementById('btn-snap');
     const btnRetake      = document.getElementById('btn-retake');
     const previewWrap    = document.getElementById('photo-preview-wrap');
     const previewImg     = document.getElementById('photo-preview-img');
@@ -764,8 +768,6 @@ function selectTT(val) {
     function setGps(state, text) { gpsPill.className = 'gps-pill gps-' + state + ' self-start'; gpsText.textContent = text; }
     function updateOverlay() {
         if (gpsLat === null) return;
-        const short = gpsAddr ? gpsAddr.split(',').slice(-3).join(',').trim() : '';
-        liveCoords.textContent = gpsLat.toFixed(6) + ', ' + gpsLng.toFixed(6) + (short ? ' · ' + short : '');
         if (gpsReady) setGps('ready', gpsLat.toFixed(5) + ', ' + gpsLng.toFixed(5));
     }
     function reverseGeocode(lat, lng) {
@@ -784,18 +786,13 @@ function selectTT(val) {
 
     /* ═══ Camera ═══ */
     async function openCamera() {
-        try {
-            mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
-            video.srcObject = mediaStream;
-            viewfinderWrap.style.display = 'flex';
-            btnOpenCam.style.display = 'none';
-            previewWrap.style.display = 'none';
-            mapThumb.style.display    = 'none';
-            btnRetake.style.display   = 'none';
-        } catch (err) { alert('Camera access denied: ' + err.message); }
+        viewfinderWrap.style.display = 'flex';
+        btnOpenCam.style.display     = 'none';
+        previewWrap.style.display    = 'none';
+        mapThumb.style.display       = 'none';
+        btnRetake.style.display      = 'none';
     }
     function closeCamera() {
-        if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
         viewfinderWrap.style.display = 'none';
         btnOpenCam.style.display     = 'inline-flex';
     }
@@ -805,132 +802,129 @@ function selectTT(val) {
         if (photoTaken) btnRetake.style.display = 'inline-flex';
     });
 
-    /* ═══ Capture + watermark ═══ */
-    btnSnap.addEventListener('click', function () {
+    const uploadDropZone = document.getElementById('upload-drop-zone');
+    uploadDropZone.addEventListener('dragover',  e => { e.preventDefault(); uploadDropZone.style.borderColor = '#34d399'; uploadDropZone.style.background = '#f0fdf4'; });
+    uploadDropZone.addEventListener('dragleave', ()  => { uploadDropZone.style.borderColor = '#e2e8f0'; uploadDropZone.style.background = '#f8fafc'; });
+    uploadDropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        uploadDropZone.style.borderColor = '#e2e8f0';
+        uploadDropZone.style.background  = '#f8fafc';
+        const f = e.dataTransfer.files[0];
+        if (f && f.type.startsWith('image/')) handleUploadedFile(f);
+    });
+
+    document.getElementById('upload-file-input').addEventListener('change', function () {
+        if (this.files[0]) handleUploadedFile(this.files[0]);
+    });
+
+    function handleUploadedFile(file) {
         if (!gpsReady) { alert('GPS not ready yet. Please wait a moment.'); return; }
 
-        const vw = video.videoWidth || 1280, vh = video.videoHeight || 960;
-        canvas.width = vw; canvas.height = vh;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, vw, vh);
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const img = new Image();
+            img.onload = function () {
+                const vw = img.naturalWidth, vh = img.naturalHeight;
+                canvas.width = vw; canvas.height = vh;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, vw, vh);
 
-        const now       = new Date();
-        const dtStr     = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
-        const coordStr  = gpsLat.toFixed(6) + '° N,  ' + gpsLng.toFixed(6) + '° E';
-        const shortAddr = gpsAddr ? gpsAddr.split(',').slice(-4).join(',').trim() : 'Address resolving…';
-        const auditTag  = 'PMJAY Assam · DMO Field Audit';
+                // ── Watermark (identical to snap) ──
+                const now      = new Date();
+                const dtStr    = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+                const coordStr = gpsLat.toFixed(6) + '° N,  ' + gpsLng.toFixed(6) + '° E';
+                const shortAddr = gpsAddr ? gpsAddr.split(',').slice(-4).join(',').trim() : 'Address resolving…';
+                const auditTag  = 'PMJAY Assam · DMO Field Audit';
 
-        const fontSize = Math.max(14, Math.round(vh * 0.022));
-        const lineH    = Math.round(fontSize * 1.5), pad = Math.round(vw * 0.018);
-        const lines    = [auditTag, coordStr, shortAddr, dtStr];
-        const stripH   = lines.length * lineH + pad * 2;
+                const fontSize = Math.max(14, Math.round(vh * 0.022));
+                const lineH    = Math.round(fontSize * 1.5), pad = Math.round(vw * 0.018);
+                const lines    = [auditTag, coordStr, shortAddr, dtStr];
+                const stripH   = lines.length * lineH + pad * 2;
 
-        ctx.fillStyle = 'rgba(0,0,0,0.62)'; ctx.fillRect(0, vh - stripH, vw, stripH);
-        ctx.font = '600 ' + fontSize + 'px "Segoe UI", Arial, sans-serif'; ctx.textBaseline = 'top';
-        lines.forEach((line, i) => {
-            const y = vh - stripH + pad + i * lineH;
-            ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillText(line, pad + 1, y + 1);
-            ctx.fillStyle = i === 0 ? '#34d399' : '#ffffff'; ctx.fillText(line, pad, y);
-        });
-        const bw = Math.max(3, Math.round(vw * 0.004));
-        ctx.strokeStyle = '#34d399'; ctx.lineWidth = bw; ctx.strokeRect(bw/2, bw/2, vw - bw, vh - bw);
+                ctx.fillStyle = 'rgba(0,0,0,0.62)'; ctx.fillRect(0, vh - stripH, vw, stripH);
+                ctx.font = '600 ' + fontSize + 'px "Segoe UI", Arial, sans-serif'; ctx.textBaseline = 'top';
+                lines.forEach((line, i) => {
+                    const y = vh - stripH + pad + i * lineH;
+                    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillText(line, pad + 1, y + 1);
+                    ctx.fillStyle = i === 0 ? '#34d399' : '#ffffff'; ctx.fillText(line, pad, y);
+                });
+                const bw = Math.max(3, Math.round(vw * 0.004));
+                ctx.strokeStyle = '#34d399'; ctx.lineWidth = bw; ctx.strokeRect(bw/2, bw/2, vw - bw, vh - bw);
 
-        previewImg.src            = canvas.toDataURL('image/jpeg', 0.92);
-        previewWrap.style.display = 'block';
-        wmLine1.textContent       = auditTag;
-        wmLine2.textContent       = coordStr;
-        wmLine3.textContent       = dtStr;
+                previewImg.src            = canvas.toDataURL('image/jpeg', 0.92);
+                previewWrap.style.display = 'block';
+                wmLine1.textContent       = auditTag;
+                wmLine2.textContent       = coordStr;
+                wmLine3.textContent       = dtStr;
 
-        const mapUrl = 'https://maps.googleapis.com/maps/api/staticmap?center=' + gpsLat + ',' + gpsLng + '&zoom=15&size=480x160&maptype=roadmap&markers=color:red%7C' + gpsLat + ',' + gpsLng + '&key=' + GMAPS_KEY;
-        mapThumb.src              = mapUrl;
-        mapThumb.style.display    = 'block';
-        fieldLat.value            = gpsLat;
-        fieldLng.value            = gpsLng;
-        fieldAddress.value        = gpsAddr;
+                const mapUrl = 'https://maps.googleapis.com/maps/api/staticmap?center=' + gpsLat + ',' + gpsLng + '&zoom=15&size=480x160&maptype=roadmap&markers=color:red%7C' + gpsLat + ',' + gpsLng + '&key=' + GMAPS_KEY;
+                mapThumb.src              = mapUrl;
+                mapThumb.style.display    = 'block';
+                fieldLat.value            = gpsLat;
+                fieldLng.value            = gpsLng;
+                fieldAddress.value        = gpsAddr;
 
-        canvas.toBlob(blob => {
-            const f  = new File([blob], 'field_visit_' + Date.now() + '.jpg', { type: 'image/jpeg' });
-            const dt = new DataTransfer();
-            dt.items.add(f);
-            fieldPhotoFile.files = dt.files;
-        }, 'image/jpeg', 0.92);
+                canvas.toBlob(blob => {
+                    const f2 = new File([blob], 'field_visit_' + Date.now() + '.jpg', { type: 'image/jpeg' });
+                    const dt = new DataTransfer();
+                    dt.items.add(f2);
+                    fieldPhotoFile.files = dt.files;
+                }, 'image/jpeg', 0.92);
 
-        closeCamera();
-        photoTaken                = false;
-        btnRetake.style.display   = 'none';
-        photoError.style.display  = 'none';
-        faceBadge.style.display   = 'none';
-        checkingMsg.style.display = 'flex';
+                closeCamera();
+                btnRetake.style.display   = 'none';
+                photoError.style.display  = 'none';
+                faceBadge.style.display   = 'none';
+                checkingMsg.style.display = 'flex';
 
-        fetch('{{ route("dmo.audits.validate.photo") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
-            },
-            body: JSON.stringify({ image: canvas.toDataURL('image/jpeg', 0.92) })
-        })
-        .then(r => r.json())
-        .then(data => {
-            checkingMsg.style.display = 'none';
-            btnRetake.style.display   = 'inline-flex';
-
-            if (data.valid) {
-                photoTaken               = true;
-                photoError.style.display = 'none';
-                faceBadge.innerHTML      = '<i class="fas fa-check-circle mr-1"></i>' + data.message;
-                faceBadge.style.display  = 'inline-flex';
-                document.getElementById('btn-submit').disabled = false;
-
-                toast('success', 'AI Verification Passed', data.message);
-
-            } else {
-                photoTaken = false;
-                document.getElementById('btn-submit').disabled = true;
-
-                // Split multi-sentence errors into bullet lines
-                const sentences = (data.message || 'AI validation failed.')
-                    .split(/(?<=\.)\s+/)
-                    .map(s => s.trim())
-                    .filter(Boolean);
-
-                const bulletHtml = sentences.length > 1
-                    ? '<ul style="margin:.3rem 0 0 .1rem; padding-left:1.1rem; list-style:disc; display:flex; flex-direction:column; gap:.25rem;">'
-                        + sentences.map(s => `<li>${s}</li>`).join('')
-                        + '</ul>'
-                    : sentences[0];
-
-                photoError.innerHTML =
-                    '<div style="display:flex; align-items:flex-start; gap:.5rem;">'
-                    + '<i class="fas fa-exclamation-triangle" style="margin-top:.15rem; flex-shrink:0;"></i>'
-                    + '<div>' + bulletHtml + '</div>'
-                    + '</div>';
-
-                photoError.style.display = 'block';
-                faceBadge.style.display  = 'none';
-
-                document.getElementById('camera-section')
-                    .scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                toast('error', 'AI Verification Failed', data.message, 8000);
-            }
-        })
-        .catch(() => {
-            // Fail-open: Vision API down — warn but allow submission
-            checkingMsg.style.display = 'none';
-            btnRetake.style.display   = 'inline-flex';
-            photoTaken                = true;
-            document.getElementById('btn-submit').disabled = false;
-
-            faceBadge.className     = 'gps-pill gps-acquiring';
-            faceBadge.innerHTML     = '<i class="fas fa-exclamation-circle mr-1"></i> AI check skipped — photo accepted, flagged for manual review';
-            faceBadge.style.display = 'inline-flex';
-
-            photoError.style.display = 'none';
-
-            toast('warning', 'AI Check Skipped', 'Vision service unavailable. Photo accepted — flagged for manual review by supervisor.');
-        });
-    });
+                // ── AI validation (unchanged) ──
+                fetch('{{ route("dmo.audits.validate.photo") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value },
+                    body: JSON.stringify({ image: canvas.toDataURL('image/jpeg', 0.92) })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    checkingMsg.style.display = 'none';
+                    btnRetake.style.display   = 'inline-flex';
+                    if (data.valid) {
+                        photoTaken               = true;
+                        photoError.style.display = 'none';
+                        faceBadge.innerHTML      = '<i class="fas fa-check-circle mr-1"></i>' + data.message;
+                        faceBadge.style.display  = 'inline-flex';
+                        document.getElementById('btn-submit').disabled = false;
+                        toast('success', 'AI Verification Passed', data.message);
+                    } else {
+                        photoTaken = false;
+                        document.getElementById('btn-submit').disabled = true;
+                        const sentences = (data.message || 'AI validation failed.').split(/(?<=\.)\s+/).map(s => s.trim()).filter(Boolean);
+                        const bulletHtml = sentences.length > 1
+                            ? '<ul style="margin:.3rem 0 0 .1rem;padding-left:1.1rem;list-style:disc;display:flex;flex-direction:column;gap:.25rem;">' + sentences.map(s => `<li>${s}</li>`).join('') + '</ul>'
+                            : sentences[0];
+                        photoError.innerHTML = '<div style="display:flex;align-items:flex-start;gap:.5rem;"><i class="fas fa-exclamation-triangle" style="margin-top:.15rem;flex-shrink:0;"></i><div>' + bulletHtml + '</div></div>';
+                        photoError.style.display = 'block';
+                        faceBadge.style.display  = 'none';
+                        document.getElementById('camera-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        toast('error', 'AI Verification Failed', data.message, 8000);
+                    }
+                })
+                .catch(() => {
+                    checkingMsg.style.display = 'none';
+                    btnRetake.style.display   = 'inline-flex';
+                    photoTaken                = true;
+                    document.getElementById('btn-submit').disabled = false;
+                    faceBadge.className     = 'gps-pill gps-acquiring';
+                    faceBadge.innerHTML     = '<i class="fas fa-exclamation-circle mr-1"></i> AI check skipped — photo accepted, flagged for manual review';
+                    faceBadge.style.display = 'inline-flex';
+                    photoError.style.display = 'none';
+                    toast('warning', 'AI Check Skipped', 'Vision service unavailable. Photo accepted — flagged for manual review by supervisor.');
+                });
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+   
 
     btnRetake.addEventListener('click', function () {
         photoTaken                = false;

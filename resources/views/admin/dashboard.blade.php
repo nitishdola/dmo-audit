@@ -1,370 +1,434 @@
 @extends('admin.layout.layout')
 
 @section('main_title')
-<div class="flex flex-wrap items-center justify-between gap-4 mb-8">
-    <div>
-        <div class="flex items-center gap-3 mb-1">
-            <div class="h-8 w-1 rounded-full bg-linear-to-b from-cyan-400 to-blue-600"></div>
-            <span class="text-xs font-bold tracking-[.2em] uppercase text-slate-400">PMJAY Assam · Admin Console</span>
-        </div>
-        <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-none">
-            Audit Intelligence
-        </h1>
+<div style="display:flex; align-items:center; gap:10px;">
+    <div style="display:flex; flex-direction:column; gap:2px;">
+        <span style="font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#8c96ab;">Atal Amrit Abhiyan · Assam</span>
+        <span style="font-size:15px; font-weight:700; color:#0a0f1e; letter-spacing:-.02em; line-height:1;">Audit Intelligence</span>
     </div>
-    <div class="flex items-center gap-3">
-        <div class="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold px-4 py-2.5 rounded-xl">
-            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            Live Data
-        </div>
+    <div style="display:flex; align-items:center; gap:5px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:20px; padding:4px 10px; margin-left:4px;">
+        <span style="width:6px; height:6px; background:#10b981; border-radius:50%; display:inline-block; animation:pulse 2s infinite;"></span>
+        <span style="font-size:11px; font-weight:600; color:#059669;">Live</span>
     </div>
 </div>
 @endsection
 
 @section('pageCss')
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap');
-
-    * { font-family: 'DM Sans', sans-serif; }
-    h1, h2, .font-display { font-family: "Roboto", sans-serif; }
-
-    .stat-card {
-        background: #fff; border-radius: 1.25rem; border: 1px solid #e2e8f0; padding: 1.5rem;
-        position: relative; overflow: hidden; transition: box-shadow .2s, transform .2s;
+    :root {
+        --ink:      #0a0f1e;
+        --ink-2:    #1a2236;
+        --slate-soft:#f0f3f8;
+        --slate-line:#e3e8f0;
+        --slate-mid: #8c96ab;
+        --white:    #ffffff;
+        --teal:     #0ea5e9;
+        --green:    #10b981;
+        --amber:    #f59e0b;
+        --rose:     #f43f5e;
+        --violet:   #8b5cf6;
+        --font:     'Plus Jakarta Sans', sans-serif;
+        --r-md:     12px;
+        --r-lg:     16px;
+        --r-xl:     20px;
     }
-    .stat-card:hover { box-shadow: 0 12px 40px rgba(0,0,0,.1); transform: translateY(-2px); }
-    .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
-    .card-tele::before   { background: linear-gradient(90deg,#06b6d4,#0ea5e9); }
-    .card-field::before  { background: linear-gradient(90deg,#f59e0b,#f97316); }
-    .card-live::before   { background: linear-gradient(90deg,#8b5cf6,#6366f1); }
-    .card-total::before  { background: linear-gradient(90deg,#10b981,#14b8a6); }
-    .card-infra::before  { background: linear-gradient(90deg,#ec4899,#f43f5e); }
 
-    .big-num { font-family:"Roboto",sans-serif; font-size:2.75rem; font-weight:900; line-height:1; letter-spacing:-.03em; }
+    * { font-family: var(--font); }
 
-    .ring-wrap { position:relative; width:64px; height:64px; flex-shrink:0; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+    .fu { animation: fadeUp .45s ease both; }
+    .fu:nth-child(1){animation-delay:.04s} .fu:nth-child(2){animation-delay:.08s}
+    .fu:nth-child(3){animation-delay:.12s} .fu:nth-child(4){animation-delay:.16s}
+    .fu:nth-child(5){animation-delay:.20s}
+
+    /* ── Cards ── */
+    .card {
+        background: var(--white);
+        border: 1px solid var(--slate-line);
+        border-radius: var(--r-xl);
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+    .card:hover { box-shadow: 0 8px 32px rgba(10,15,30,.07); }
+
+    /* Coloured top stripe */
+    .card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 2.5px;
+        border-radius: var(--r-xl) var(--r-xl) 0 0;
+    }
+    .ct::before { background: linear-gradient(90deg,#06b6d4,#0ea5e9); }
+    .cf::before { background: linear-gradient(90deg,#f59e0b,#f97316); }
+    .cl::before { background: linear-gradient(90deg,#8b5cf6,#6366f1); }
+    .cg::before { background: linear-gradient(90deg,#10b981,#14b8a6); }
+    .cr::before { background: linear-gradient(90deg,#f43f5e,#fb7185); }
+
+    /* KPI number */
+    .kpi-num {
+        font-size: 36px; font-weight: 800;
+        letter-spacing: -.04em; line-height: 1;
+        color: var(--ink);
+    }
+
+    /* Icon bubble */
+    .ib {
+        width: 40px; height: 40px;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 15px; flex-shrink: 0;
+    }
+    .ib-teal   { background:#e0f7ff; color:#0284c7; }
+    .ib-amber  { background:#fff8e0; color:#d97706; }
+    .ib-violet { background:#f3eeff; color:#7c3aed; }
+    .ib-green  { background:#e7f9f2; color:#059669; }
+    .ib-rose   { background:#fff0f3; color:#e11d48; }
+
+    /* Progress bar */
+    .pbar-track { height: 5px; background:#f1f5f9; border-radius:9999px; overflow:hidden; }
+    .pbar-fill  { height:100%; border-radius:9999px; transition: width 1s ease; }
+
+    /* Trend badge */
+    .badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-size: 10.5px; font-weight: 700;
+        padding: 2px 7px; border-radius: 9999px;
+    }
+    .badge-up   { background:#d1fae5; color:#059669; }
+    .badge-down { background:#fee2e2; color:#dc2626; }
+
+    /* Sub-row inside total card */
+    .sub-grid {
+        display: grid; grid-template-columns: 1fr 1fr 1fr;
+        border-top: 1px solid var(--slate-line);
+        margin-top: 14px; padding-top: 12px;
+        gap: 1px;
+    }
+    .sub-cell { text-align: center; padding: 0 4px; }
+    .sub-cell + .sub-cell { border-left: 1px solid var(--slate-line); }
+    .sub-lbl { font-size: 9.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--slate-mid); }
+    .sub-val  { font-size: 15px; font-weight: 800; margin-top: 2px; }
+
+    /* Section heading */
+    .sec-head {
+        font-size: 13.5px; font-weight: 700;
+        color: var(--ink); letter-spacing: -.01em;
+    }
+    .sec-sub  { font-size: 11px; color: var(--slate-mid); margin-top: 2px; }
+
+    /* Ring SVG */
+    .ring-wrap { position:relative; width:56px; height:56px; flex-shrink:0; }
     .ring-wrap svg { transform:rotate(-90deg); }
-    .ring-bg  { fill:none; stroke:#f1f5f9; stroke-width:6; }
-    .ring-val { fill:none; stroke-width:6; stroke-linecap:round; transition:stroke-dashoffset 1s ease; }
-    .ring-label { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:.7rem; font-weight:800; font-family:"Roboto",sans-serif; }
+    .ring-bg  { fill:none; stroke:#f1f5f9; stroke-width:5; }
+    .ring-val { fill:none; stroke-width:5; stroke-linecap:round; }
+    .ring-lbl { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; }
 
-    .trend-up   { background:#d1fae5; color:#059669; }
-    .trend-down { background:#fee2e2; color:#dc2626; }
-    .trend-badge { display:inline-flex; align-items:center; gap:.3rem; font-size:.7rem; font-weight:700; padding:.2rem .6rem; border-radius:9999px; }
+    /* DMO table */
+    .dmo-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 90px;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 14px;
+        border-radius: var(--r-md);
+        transition: background .12s;
+    }
+    .dmo-grid:hover { background: var(--slate-soft); }
+    .dmo-grid + .dmo-grid { border-top: 1px solid #f5f7fb; }
+    .dmo-hdr { font-size: 9.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--slate-mid); }
 
-    .chart-card { background:#fff; border:1px solid #e2e8f0; border-radius:1.25rem; padding:1.5rem; }
+    /* Feed */
+    .feed-row { display:flex; gap:11px; padding: 9px 0; }
+    .feed-row + .feed-row { border-top: 1px solid #f5f7fb; }
+    .feed-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink:0; margin-top: 5px; }
 
-    /* DMO table — 7 columns now (infra added) */
-    .dmo-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 100px; align-items:center; gap:.5rem; padding:.875rem 1.25rem; border-radius:.875rem; transition:background .15s; }
-    .dmo-row:hover { background:#f8fafc; }
-    .dmo-row + .dmo-row { border-top:1px solid #f1f5f9; }
-    .dmo-header { color:#94a3b8; font-size:.7rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; }
+    /* Hospital bars */
+    .hosp-bar { height: 7px; border-radius: 9999px; transition: width 1s ease; }
 
-    .feed-item { display:flex; gap:.875rem; padding:.75rem 0; }
-    .feed-item + .feed-item { border-top:1px solid #f1f5f9; }
-    .feed-dot { width:.625rem; height:.625rem; border-radius:9999px; flex-shrink:0; margin-top:.35rem; }
-
-    .legend-dot { width:.75rem; height:.75rem; border-radius:9999px; flex-shrink:0; }
-    .sec-head { font-family:"Roboto",sans-serif; font-size:1rem; font-weight:800; color:#0f172a; letter-spacing:-.01em; }
-
-    .hm-cell { border-radius:.375rem; aspect-ratio:1; transition:transform .15s; cursor:default; }
-    .hm-cell:hover { transform:scale(1.3); z-index:10; position:relative; }
-
-    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
-    .fade-up { animation:fadeUp .5s ease forwards; opacity:0; }
-    .fade-up:nth-child(1){animation-delay:.05s} .fade-up:nth-child(2){animation-delay:.1s}
-    .fade-up:nth-child(3){animation-delay:.15s} .fade-up:nth-child(4){animation-delay:.2s}
-    .fade-up:nth-child(5){animation-delay:.25s}
-
+    /* Tooltip */
     [data-tip] { position:relative; }
-    [data-tip]:hover::after { content:attr(data-tip); position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%); background:#0f172a; color:#fff; font-size:.7rem; padding:.3rem .6rem; border-radius:.5rem; white-space:nowrap; pointer-events:none; z-index:50; }
+    [data-tip]:hover::after {
+        content: attr(data-tip);
+        position: absolute; bottom: calc(100% + 5px); left: 50%;
+        transform: translateX(-50%);
+        background: var(--ink); color:#fff;
+        font-size: 10px; padding: 3px 7px; border-radius: 6px;
+        white-space: nowrap; pointer-events: none; z-index: 50;
+    }
+
+    /* Legend */
+    .leg-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 </style>
 @endsection
 
 @section('main_content')
 
-{{-- ══════════════════════════════════════════════════════════
-     ROW 1 — KPI CARDS  (5 cards; infra is the 5th)
-     ══════════════════════════════════════════════════════════ --}}
-<div class="grid grid-cols-2 xl:grid-cols-5 gap-5 mb-8">
+{{-- ══ ROW 1 — KPI CARDS ══ --}}
+<div style="display:grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap:14px; margin-bottom:18px;"
+     class="fu-grid">
 
     {{-- Total --}}
-    <div class="stat-card card-total fade-up col-span-2 xl:col-span-1">
-        <div class="flex items-start justify-between gap-3">
+    <div class="card cg fu">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Total Audits</p>
-                <div class="big-num text-slate-900">{{ number_format($totals['grand_total']) }}</div>
-                <div class="flex items-center gap-2 mt-2">
-                    <span class="trend-badge {{ $totals['growth_up'] ? 'trend-up' : 'trend-down' }}">
-                        <i class="fas fa-arrow-{{ $totals['growth_up'] ? 'up' : 'down' }} text-[9px]"></i>
+                <p style="font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--slate-mid); margin-bottom:8px;">Total Audits</p>
+                <div class="kpi-num">{{ number_format($totals['grand_total']) }}</div>
+                <div style="display:flex; align-items:center; gap:6px; margin-top:8px;">
+                    <span class="badge {{ $totals['growth_up'] ? 'badge-up' : 'badge-down' }}">
+                        <i class="fas fa-arrow-{{ $totals['growth_up'] ? 'up' : 'down' }}" style="font-size:7px;"></i>
                         {{ $totals['growth_pct'] }}%
                     </span>
-                    <span class="text-xs text-slate-400">vs last period</span>
+                    <span style="font-size:11px; color:var(--slate-mid);">vs last period</span>
                 </div>
             </div>
             <div class="ring-wrap">
-                <svg viewBox="0 0 64 64" width="64" height="64">
-                    <circle class="ring-bg" cx="32" cy="32" r="29"/>
-                    <circle class="ring-val" cx="32" cy="32" r="29"
+                <svg viewBox="0 0 56 56" width="56" height="56">
+                    <circle class="ring-bg" cx="28" cy="28" r="24"/>
+                    <circle class="ring-val" cx="28" cy="28" r="24"
                         stroke="#10b981"
-                        stroke-dasharray="{{ round(2*M_PI*29) }}"
-                        stroke-dashoffset="{{ round(2*M_PI*29*(1-$totals['completion_rate']/100)) }}"/>
+                        stroke-dasharray="{{ round(2*M_PI*24) }}"
+                        stroke-dashoffset="{{ round(2*M_PI*24*(1-$totals['completion_rate']/100)) }}"/>
                 </svg>
-                <div class="ring-label text-emerald-600">{{ $totals['completion_rate'] }}%</div>
+                <div class="ring-lbl" style="color:#059669;">{{ $totals['completion_rate'] }}%</div>
             </div>
         </div>
-        <div class="mt-4 grid grid-cols-3 gap-2 pt-4 border-t border-slate-100">
-            <div class="text-center"><p class="text-[10px] text-slate-400 uppercase tracking-wider">Done</p><p class="text-sm font-bold text-slate-800">{{ number_format($totals['completed']) }}</p></div>
-            <div class="text-center border-x border-slate-100"><p class="text-[10px] text-slate-400 uppercase tracking-wider">Pending</p><p class="text-sm font-bold text-amber-600">{{ number_format($totals['pending']) }}</p></div>
-            <div class="text-center"><p class="text-[10px] text-slate-400 uppercase tracking-wider">DMOs</p><p class="text-sm font-bold text-slate-800">{{ $totals['active_dmos'] }}</p></div>
+        <div class="sub-grid">
+            <div class="sub-cell"><div class="sub-lbl">Done</div><div class="sub-val" style="color:var(--green);">{{ number_format($totals['completed']) }}</div></div>
+            <div class="sub-cell"><div class="sub-lbl">Pending</div><div class="sub-val" style="color:var(--amber);">{{ number_format($totals['pending']) }}</div></div>
+            <div class="sub-cell"><div class="sub-lbl">DMOs</div><div class="sub-val" style="color:var(--ink);">{{ $totals['active_dmos'] }}</div></div>
         </div>
     </div>
 
     {{-- Telephonic --}}
-    <div class="stat-card card-tele fade-up">
-        <div class="flex items-start justify-between gap-2 mb-4">
+    <div class="card ct fu">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:12px;">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Telephonic</p>
-                <div class="big-num text-slate-900">{{ number_format($tele['total']) }}</div>
+                <p style="font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--slate-mid); margin-bottom:8px;">Telephonic</p>
+                <div class="kpi-num" style="font-size:28px;">{{ number_format($tele['total']) }}</div>
             </div>
-            <div class="h-12 w-12 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center text-xl shrink-0"><i class="fas fa-phone-alt"></i></div>
+            <div class="ib ib-teal"><i class="fas fa-phone-alt"></i></div>
         </div>
-        <div class="flex items-center gap-2 mb-3">
-            <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-cyan-400 to-sky-500 rounded-full" style="width:{{ $tele['completion_rate'] }}%"></div></div>
-            <span class="text-xs font-bold text-cyan-600 shrink-0">{{ $tele['completion_rate'] }}%</span>
+        <div class="pbar-track" style="margin-bottom:7px;">
+            <div class="pbar-fill" style="width:{{ $tele['completion_rate'] }}%; background:linear-gradient(90deg,#06b6d4,#0ea5e9);"></div>
         </div>
-        <div class="flex justify-between text-xs text-slate-500">
-            <span>Completed: <strong class="text-slate-800">{{ number_format($tele['completed']) }}</strong></span>
-            <span class="text-rose-500">{{ number_format($tele['total']-$tele['completed']) }} pending</span>
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--slate-mid);">
+            <span>Done <strong style="color:var(--ink);">{{ number_format($tele['completed']) }}</strong></span>
+            <span style="color:var(--teal); font-weight:600;">{{ $tele['completion_rate'] }}%</span>
         </div>
-        
     </div>
 
     {{-- Field Visits --}}
-    <div class="stat-card card-field fade-up">
-        <div class="flex items-start justify-between gap-2 mb-4">
+    <div class="card cf fu">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:12px;">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Field Visits</p>
-                <div class="big-num text-slate-900">{{ number_format($field['total']) }}</div>
+                <p style="font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--slate-mid); margin-bottom:8px;">Field Visits</p>
+                <div class="kpi-num" style="font-size:28px;">{{ number_format($field['total']) }}</div>
             </div>
-            <div class="h-12 w-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl shrink-0"><i class="fas fa-people-arrows"></i></div>
+            <div class="ib ib-amber"><i class="fas fa-people-arrows"></i></div>
         </div>
-        <div class="flex items-center gap-2 mb-3">
-            <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full" style="width:{{ $field['completion_rate'] }}%"></div></div>
-            <span class="text-xs font-bold text-amber-600 shrink-0">{{ $field['completion_rate'] }}%</span>
+        <div class="pbar-track" style="margin-bottom:7px;">
+            <div class="pbar-fill" style="width:{{ $field['completion_rate'] }}%; background:linear-gradient(90deg,#f59e0b,#f97316);"></div>
         </div>
-        <div class="flex justify-between text-xs text-slate-500">
-            <span>Completed: <strong class="text-slate-800">{{ number_format($field['completed']) }}</strong></span>
-            <span class="text-rose-500">{{ number_format($field['total']-$field['completed']) }} pending</span>
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--slate-mid);">
+            <span>Done <strong style="color:var(--ink);">{{ number_format($field['completed']) }}</strong></span>
+            <span style="color:var(--amber); font-weight:600;">{{ $field['completion_rate'] }}%</span>
         </div>
-       
     </div>
 
     {{-- Live Audits --}}
-    <div class="stat-card card-live fade-up">
-        <div class="flex items-start justify-between gap-2 mb-4">
+    <div class="card cl fu">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:12px;">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Live Audits</p>
-                <div class="big-num text-slate-900">{{ number_format($live['total']) }}</div>
+                <p style="font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--slate-mid); margin-bottom:8px;">Live Audits</p>
+                <div class="kpi-num" style="font-size:28px;">{{ number_format($live['total']) }}</div>
             </div>
-            <div class="h-12 w-12 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center text-xl shrink-0"><i class="fas fa-hospital-user"></i></div>
+            <div class="ib ib-violet"><i class="fas fa-hospital-user"></i></div>
         </div>
-        <div class="flex items-center gap-2 mb-3">
-            <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full" style="width:{{ $live['ai_pass_rate'] }}%"></div></div>
-            <span class="text-xs font-bold text-violet-600 shrink-0">{{ $live['ai_pass_rate'] }}%</span>
+        <div class="pbar-track" style="margin-bottom:7px;">
+            <div class="pbar-fill" style="width:{{ $live['ai_pass_rate'] }}%; background:linear-gradient(90deg,#8b5cf6,#6366f1);"></div>
         </div>
-        <div class="flex justify-between text-xs text-slate-500">
-            <span>AI Passed: <strong class="text-slate-800">{{ number_format($live['ai_passed']) }}</strong></span>
-            <span class="text-amber-500">{{ number_format($live['ai_skipped']) }} skipped</span>
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--slate-mid);">
+            <span>AI Pass <strong style="color:var(--ink);">{{ number_format($live['ai_passed']) }}</strong></span>
+            <span style="color:var(--violet); font-weight:600;">{{ $live['ai_pass_rate'] }}%</span>
         </div>
-       
     </div>
 
-    {{-- ── Infrastructure Audits ── --}}
-    <div class="stat-card card-infra fade-up">
-        <div class="flex items-start justify-between gap-2 mb-4">
+    {{-- Infra Audits --}}
+    <div class="card cr fu">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:12px;">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Infra Audits</p>
-                <div class="big-num text-slate-900">{{ number_format($infra['total']) }}</div>
-                <div class="flex items-center gap-2 mt-2">
-                    <span class="trend-badge {{ $infra['growth_up'] ? 'trend-up' : 'trend-down' }}">
-                        <i class="fas fa-arrow-{{ $infra['growth_up'] ? 'up' : 'down' }} text-[9px]"></i>
+                <p style="font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--slate-mid); margin-bottom:8px;">Infra Audits</p>
+                <div class="kpi-num" style="font-size:28px;">{{ number_format($infra['total']) }}</div>
+                <div style="margin-top:6px;">
+                    <span class="badge {{ $infra['growth_up'] ? 'badge-up' : 'badge-down' }}">
+                        <i class="fas fa-arrow-{{ $infra['growth_up'] ? 'up' : 'down' }}" style="font-size:7px;"></i>
                         {{ $infra['growth_pct'] }}%
                     </span>
-                    <span class="text-xs text-slate-400">vs last period</span>
                 </div>
             </div>
-            <div class="h-12 w-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center text-xl shrink-0">
-                <i class="fas fa-building-columns"></i>
-            </div>
+            <div class="ib ib-rose"><i class="fas fa-building-columns"></i></div>
         </div>
-        {{-- Banner pass-rate progress bar --}}
-        <div class="flex items-center gap-2 mb-3">
-            <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div class="h-full bg-gradient-to-r from-pink-500 to-rose-500 rounded-full"
-                     style="width:{{ $infra['banner_pass_rate'] }}%"></div>
-            </div>
-            <span class="text-xs font-bold text-rose-500 shrink-0">{{ $infra['banner_pass_rate'] }}%</span>
+        <div class="pbar-track" style="margin-bottom:7px;">
+            <div class="pbar-fill" style="width:{{ $infra['banner_pass_rate'] }}%; background:linear-gradient(90deg,#f43f5e,#fb7185);"></div>
         </div>
-        {{-- Banner counts --}}
-        <div class="flex justify-between text-xs text-slate-500 mb-3">
-            <span>Banner ✓ <strong class="text-slate-800">{{ number_format($infra['banner_passed']) }}</strong></span>
-            <span class="text-rose-400">✗ {{ number_format($infra['banner_failed']) }}</span>
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--slate-mid);">
+            <span>Banner ✓ <strong style="color:var(--ink);">{{ number_format($infra['banner_passed']) }}</strong></span>
+            <span style="color:var(--rose); font-weight:600;">{{ $infra['banner_pass_rate'] }}%</span>
         </div>
-        
     </div>
 </div>
 
-{{-- ══════════════════════════════════════════════════════════
-     ROW 2 — Timeline (4 series) + Infra breakdown panel
-     ══════════════════════════════════════════════════════════ --}}
-<div class="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-8">
+{{-- ══ ROW 2 — Timeline + Infra Breakdown ══ --}}
+<div style="display:grid; grid-template-columns:1fr 320px; gap:14px; margin-bottom:18px;">
 
-    <div class="chart-card xl:col-span-2">
-        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+    <div class="card" style="padding:22px;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
             <div>
-                <p class="sec-head">Audit Activity Timeline</p>
-                <p class="text-xs text-slate-400 mt-0.5">Daily submissions across all audit types</p>
+                <div class="sec-head">Audit Activity Timeline</div>
+                <div class="sec-sub">Daily submissions across all types</div>
             </div>
-            <div class="flex items-center gap-4 text-xs font-semibold flex-wrap">
-                <span class="flex items-center gap-1.5"><span class="h-2 w-4 rounded-full bg-cyan-500"></span> Telephonic</span>
-                <span class="flex items-center gap-1.5"><span class="h-2 w-4 rounded-full bg-amber-400"></span> Field</span>
-                <span class="flex items-center gap-1.5"><span class="h-2 w-4 rounded-full bg-violet-500"></span> Live</span>
-                <span class="flex items-center gap-1.5"><span class="h-2 w-4 rounded-full bg-rose-400"></span> Infra</span>
+            <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                @foreach([['Telephonic','#06b6d4'],['Field','#f59e0b'],['Live','#8b5cf6'],['Infra','#f43f5e']] as [$lbl,$clr])
+                <span style="display:flex; align-items:center; gap:5px; font-size:11px; font-weight:600; color:var(--slate-mid);">
+                    <span style="width:14px; height:3px; border-radius:9999px; background:{{ $clr }}; display:inline-block;"></span>
+                    {{ $lbl }}
+                </span>
+                @endforeach
             </div>
         </div>
-        <canvas id="activityChart" height="200"></canvas>
+        <canvas id="activityChart" height="190"></canvas>
     </div>
 
-    {{-- Infra breakdown panel --}}
-    <div class="chart-card flex flex-col gap-5">
+    <div class="card" style="padding:22px; display:flex; flex-direction:column; gap:18px;">
         <div>
-            <p class="sec-head mb-0.5">Infra Breakdown</p>
-            <p class="text-xs text-slate-400">Banner verification &amp; hygiene</p>
+            <div class="sec-head">Infra Breakdown</div>
+            <div class="sec-sub">Banner · Hygiene · Hospital type</div>
         </div>
 
         {{-- Banner donut --}}
         <div>
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Banner AI Check</p>
-            <div class="flex items-center gap-4">
-                <div class="relative w-20 h-20 shrink-0">
-                    <canvas id="bannerDonut"></canvas>
-                    <div class="absolute inset-0 flex items-center justify-center text-xs font-black text-slate-700">
-                        {{ $infra['banner_pass_rate'] }}%
-                    </div>
+            <p style="font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--slate-mid); margin-bottom:10px;">Banner AI Check</p>
+            <div style="display:flex; align-items:center; gap:14px;">
+                <div style="position:relative; width:72px; height:72px; flex-shrink:0;">
+                    <canvas id="bannerDonut" width="72" height="72"></canvas>
+                    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--ink);">{{ $infra['banner_pass_rate'] }}%</div>
                 </div>
-                <div class="flex flex-col gap-1.5 text-xs">
-                    <span class="flex items-center gap-2"><span class="legend-dot bg-emerald-500"></span> Passed <strong class="ml-auto pl-3">{{ $infra['banner_passed'] }}</strong></span>
-                    <span class="flex items-center gap-2"><span class="legend-dot bg-rose-400"></span> Failed <strong class="ml-auto pl-3">{{ $infra['banner_failed'] }}</strong></span>
-                    <span class="flex items-center gap-2"><span class="legend-dot bg-slate-200"></span> Not checked <strong class="ml-auto pl-3">{{ $infra['banner_unchecked'] }}</strong></span>
+                <div style="display:flex; flex-direction:column; gap:5px; font-size:11px;">
+                    <span style="display:flex; align-items:center; gap:6px;"><span class="leg-dot" style="background:#10b981;"></span> Passed <strong style="margin-left:auto; padding-left:8px;">{{ $infra['banner_passed'] }}</strong></span>
+                    <span style="display:flex; align-items:center; gap:6px;"><span class="leg-dot" style="background:#f43f5e;"></span> Failed <strong style="margin-left:auto; padding-left:8px;">{{ $infra['banner_failed'] }}</strong></span>
+                    <span style="display:flex; align-items:center; gap:6px;"><span class="leg-dot" style="background:#e2e8f0;"></span> Unchecked <strong style="margin-left:auto; padding-left:8px;">{{ $infra['banner_unchecked'] }}</strong></span>
                 </div>
             </div>
         </div>
 
-        {{-- Hygiene donut --}}
-        <div class="border-t border-slate-100 pt-4">
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Hygiene Rating</p>
-            <div class="flex items-center gap-4">
-                <div class="relative w-20 h-20 shrink-0">
-                    <canvas id="hygieneDonut"></canvas>
+        <div style="border-top:1px solid var(--slate-line); padding-top:16px;">
+            <p style="font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--slate-mid); margin-bottom:10px;">Hygiene Rating</p>
+            <div style="display:flex; align-items:center; gap:14px;">
+                <div style="position:relative; width:72px; height:72px; flex-shrink:0;">
+                    <canvas id="hygieneDonut" width="72" height="72"></canvas>
                 </div>
-                <div class="flex flex-col gap-1.5 text-xs">
-                    @php $hygieneAvg = $infra['total'] - $infra['hygiene_good'] - $infra['hygiene_poor']; @endphp
-                    <span class="flex items-center gap-2"><span class="legend-dot bg-emerald-500"></span> Good <strong class="ml-auto pl-3">{{ $infra['hygiene_good'] }}</strong></span>
-                    <span class="flex items-center gap-2"><span class="legend-dot bg-amber-400"></span> Average <strong class="ml-auto pl-3">{{ $hygieneAvg }}</strong></span>
-                    <span class="flex items-center gap-2"><span class="legend-dot bg-rose-400"></span> Poor <strong class="ml-auto pl-3">{{ $infra['hygiene_poor'] }}</strong></span>
+                @php $hygieneAvg = $infra['total'] - $infra['hygiene_good'] - $infra['hygiene_poor']; @endphp
+                <div style="display:flex; flex-direction:column; gap:5px; font-size:11px;">
+                    <span style="display:flex; align-items:center; gap:6px;"><span class="leg-dot" style="background:#10b981;"></span> Good <strong style="margin-left:auto; padding-left:8px;">{{ $infra['hygiene_good'] }}</strong></span>
+                    <span style="display:flex; align-items:center; gap:6px;"><span class="leg-dot" style="background:#f59e0b;"></span> Average <strong style="margin-left:auto; padding-left:8px;">{{ $hygieneAvg }}</strong></span>
+                    <span style="display:flex; align-items:center; gap:6px;"><span class="leg-dot" style="background:#f43f5e;"></span> Poor <strong style="margin-left:auto; padding-left:8px;">{{ $infra['hygiene_poor'] }}</strong></span>
                 </div>
             </div>
         </div>
 
-        {{-- Public / Private split --}}
-        <div class="border-t border-slate-100 pt-4">
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Hospital Type</p>
+        <div style="border-top:1px solid var(--slate-line); padding-top:16px;">
+            <p style="font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--slate-mid); margin-bottom:8px;">Hospital Type</p>
             @php
-                $pubPct  = $infra['total'] > 0 ? round($infra['public_count']  / $infra['total'] * 100) : 0;
-                $privPct = $infra['total'] > 0 ? round($infra['private_count'] / $infra['total'] * 100) : 0;
+                $pubPct  = $infra['total'] > 0 ? round($infra['public_count']/$infra['total']*100) : 0;
+                $privPct = $infra['total'] > 0 ? round($infra['private_count']/$infra['total']*100) : 0;
             @endphp
-            <div class="flex h-3 rounded-full overflow-hidden gap-0.5 mb-2">
-                <div class="bg-blue-500 transition-all" style="width:{{ $pubPct }}%" data-tip="Public {{ $pubPct }}%"></div>
-                <div class="bg-fuchsia-400 transition-all" style="width:{{ $privPct }}%" data-tip="Private {{ $privPct }}%"></div>
+            <div style="display:flex; height:8px; border-radius:9999px; overflow:hidden; gap:2px; margin-bottom:8px;">
+                <div style="background:#3b82f6; width:{{ $pubPct }}%; transition:width 1s;" data-tip="Public {{ $pubPct }}%"></div>
+                <div style="background:#c084fc; width:{{ $privPct }}%; transition:width 1s;" data-tip="Private {{ $privPct }}%"></div>
             </div>
-            <div class="flex justify-between text-xs text-slate-500">
-                <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-blue-500"></span> Public {{ $pubPct }}%</span>
-                <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-fuchsia-400"></span> Private {{ $privPct }}%</span>
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--slate-mid);">
+                <span style="display:flex; align-items:center; gap:4px;"><span class="leg-dot" style="background:#3b82f6; width:8px; height:8px;"></span> Public {{ $pubPct }}%</span>
+                <span style="display:flex; align-items:center; gap:4px;"><span class="leg-dot" style="background:#c084fc; width:8px; height:8px;"></span> Private {{ $privPct }}%</span>
             </div>
         </div>
     </div>
 </div>
 
-
-
-
-{{-- ══════════════════════════════════════════════════════════
-     ROW 4 — DMO Performance Table (Infra column added)
-     ══════════════════════════════════════════════════════════ --}}
-<div class="chart-card mb-8">
-    <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+{{-- ══ ROW 3 — DMO Performance Table ══ --}}
+<div class="card" style="padding:22px; margin-bottom:18px;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
         <div>
-            <p class="sec-head">DMO Performance</p>
-            <p class="text-xs text-slate-400 mt-0.5">Individual officer metrics · ranked by completion</p>
+            <div class="sec-head">DMO Performance</div>
+            <div class="sec-sub">Individual officer metrics · ranked by completion</div>
         </div>
-        <div class="flex items-center gap-2">
-            <div class="relative">
-                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
-                <input type="text" id="dmo-search" placeholder="Search DMO…"
-                       class="pl-8 pr-4 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:border-blue-400 focus:outline-none w-48 transition">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <div style="position:relative;">
+                <i class="fas fa-search" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--slate-mid); font-size:11px; pointer-events:none;"></i>
+                <input type="text" id="dmo-search" placeholder="Search officer…"
+                       style="padding:7px 12px 7px 30px; font-size:12px; border:1px solid var(--slate-line); border-radius:10px; background:var(--white); color:var(--ink); outline:none; width:180px; font-family:var(--font); transition:border-color .15s;"
+                       onfocus="this.style.borderColor='#0ea5e9'" onblur="this.style.borderColor='var(--slate-line)'">
             </div>
-            <select id="sort-select" class="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-white focus:outline-none cursor-pointer">
-                <option value="total">Sort: Total</option>
-                <option value="completion">Sort: Completion %</option>
-                <option value="live">Sort: Live Audits</option>
-                <option value="infra">Sort: Infra Audits</option>
+            <select id="sort-select"
+                    style="padding:7px 12px; font-size:12px; border:1px solid var(--slate-line); border-radius:10px; background:var(--white); color:var(--ink); outline:none; cursor:pointer; font-family:var(--font);">
+                <option value="total">Total Audits</option>
+                <option value="completion">Completion %</option>
+                <option value="live">Live Audits</option>
+                <option value="infra">Infra Audits</option>
             </select>
         </div>
     </div>
 
-    <div class="dmo-row dmo-header bg-slate-50 rounded-xl mb-2">
+    {{-- Header row --}}
+    <div class="dmo-grid dmo-hdr" style="background:var(--slate-soft); border-radius:10px; margin-bottom:4px;">
         <span>Officer</span>
-        <span class="text-center">Telephonic</span>
-        <span class="text-center">Field Visits</span>
-        <span class="text-center">Live Audits</span>
-        <span class="text-center text-rose-400">Infra Audits</span>
-        <span class="text-center">Total</span>
-        <span class="text-center">Completion</span>
+        <span style="text-align:center;">Telephonic</span>
+        <span style="text-align:center;">Field</span>
+        <span style="text-align:center;">Live</span>
+        <span style="text-align:center; color:var(--rose);">Infra</span>
+        <span style="text-align:center;">Total</span>
+        <span style="text-align:center;">Completion</span>
     </div>
 
     <div id="dmo-table-body">
         @foreach($dmoStats as $dmo)
-        @php $compPct = $dmo['total'] > 0 ? round($dmo['completed']/$dmo['total']*100) : 0; @endphp
-        <div class="dmo-row"
+        @php $compPct = $dmo['total'] > 0 ? round($dmo['completed']/$dmo['total']*100) : 0;
+             $compClr = $compPct>=80 ? '#059669' : ($compPct>=50 ? '#d97706' : '#e11d48');
+        @endphp
+        <div class="dmo-grid"
              data-name="{{ strtolower($dmo['name']) }}"
              data-total="{{ $dmo['total'] }}"
              data-completion="{{ $compPct }}"
              data-live="{{ $dmo['live'] }}"
              data-infra="{{ $dmo['infra'] }}">
-            <div class="flex items-center gap-3 min-w-0">
-                <div class="h-9 w-9 rounded-xl flex items-center justify-center text-xs font-black shrink-0"
-                     style="background:{{ $dmo['avatar_bg'] }};color:{{ $dmo['avatar_color'] }};">
+
+            <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                <div style="width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex-shrink:0; background:{{ $dmo['avatar_bg'] }}; color:{{ $dmo['avatar_color'] }};">
                     {{ strtoupper(substr($dmo['name'],0,2)) }}
                 </div>
-                <div class="min-w-0">
-                    <p class="text-sm font-semibold text-slate-800 truncate">{{ $dmo['name'] }}</p>
-                    <p class="text-xs text-slate-400 truncate">{{ $dmo['district'] }}</p>
+                <div style="min-width:0;">
+                    <p style="font-size:12.5px; font-weight:600; color:var(--ink); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ $dmo['name'] }}</p>
+                    <p style="font-size:10.5px; color:var(--slate-mid); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ $dmo['district'] }}</p>
                 </div>
                 @if($loop->index < 3)
-                <span class="text-xs ml-1">
+                <span style="font-size:14px; flex-shrink:0;">
                     @if($loop->index===0)🥇@elseif($loop->index===1)🥈@else🥉@endif
                 </span>
                 @endif
             </div>
-            <div class="text-center"><span class="text-sm font-bold text-cyan-600">{{ $dmo['tele_completed'] }}</span><span class="text-xs text-slate-400"> / {{ $dmo['tele_total'] }}</span></div>
-            <div class="text-center"><span class="text-sm font-bold text-amber-600">{{ $dmo['field_completed'] }}</span><span class="text-xs text-slate-400"> / {{ $dmo['field_total'] }}</span></div>
-            <div class="text-center"><span class="text-sm font-bold text-violet-600">{{ $dmo['live'] }}</span></div>
-            <div class="text-center"><span class="text-sm font-bold text-rose-500">{{ $dmo['infra'] }}</span></div>
-            <div class="text-center"><span class="text-sm font-bold text-slate-800">{{ $dmo['total'] }}</span></div>
-            <div class="flex flex-col items-center gap-1">
-                <span class="text-xs font-bold {{ $compPct>=80 ? 'text-emerald-600' : ($compPct>=50 ? 'text-amber-600' : 'text-rose-500') }}">{{ $compPct }}%</span>
-                <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="h-full rounded-full" style="width:{{ $compPct }}%;background:{{ $compPct>=80 ? '#10b981' : ($compPct>=50 ? '#f59e0b' : '#f43f5e') }}"></div>
+
+            <div style="text-align:center;"><span style="font-size:13px; font-weight:700; color:#0284c7;">{{ $dmo['tele_completed'] }}</span><span style="font-size:11px; color:var(--slate-mid);"> / {{ $dmo['tele_total'] }}</span></div>
+            <div style="text-align:center;"><span style="font-size:13px; font-weight:700; color:#d97706;">{{ $dmo['field_completed'] }}</span><span style="font-size:11px; color:var(--slate-mid);"> / {{ $dmo['field_total'] }}</span></div>
+            <div style="text-align:center;"><span style="font-size:13px; font-weight:700; color:#7c3aed;">{{ $dmo['live'] }}</span></div>
+            <div style="text-align:center;"><span style="font-size:13px; font-weight:700; color:var(--rose);">{{ $dmo['infra'] }}</span></div>
+            <div style="text-align:center;"><span style="font-size:13px; font-weight:700; color:var(--ink);">{{ $dmo['total'] }}</span></div>
+
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+                <span style="font-size:11px; font-weight:700; color:{{ $compClr }};">{{ $compPct }}%</span>
+                <div class="pbar-track" style="width:100%;">
+                    <div class="pbar-fill" style="width:{{ $compPct }}%; background:{{ $compClr }};"></div>
                 </div>
             </div>
         </div>
@@ -372,69 +436,66 @@
     </div>
 </div>
 
-{{-- ══════════════════════════════════════════════════════════
-     ROW 5 — Activity Feed + Top Hospitals
-     ══════════════════════════════════════════════════════════ --}}
-<div class="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-8">
+{{-- ══ ROW 4 — Activity Feed + Top Hospitals ══ --}}
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px;">
 
-    <div class="chart-card">
-        <div class="flex items-center justify-between mb-5">
+    <div class="card" style="padding:22px;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:16px;">
             <div>
-                <p class="sec-head">Recent Activity</p>
-                <p class="text-xs text-slate-400 mt-0.5">Latest submissions across all types</p>
+                <div class="sec-head">Recent Activity</div>
+                <div class="sec-sub">Latest submissions across all types</div>
             </div>
-            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span style="width:8px; height:8px; background:var(--green); border-radius:50%; margin-top:4px; animation:pulse 2s infinite; display:inline-block;"></span>
         </div>
         <div>
             @foreach($recentActivity as $act)
-            <div class="feed-item">
-                <div class="feed-dot mt-1.5
-                    {{ $act['type']==='telephonic' ? 'bg-cyan-400'
-                     : ($act['type']==='field'      ? 'bg-amber-400'
-                     : ($act['type']==='live'        ? 'bg-violet-500'
-                     :                                 'bg-rose-400')) }}">
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-semibold text-slate-800 truncate">{{ $act['dmo_name'] }}</p>
-                    <p class="text-xs text-slate-500 mt-0.5">
-                        @if($act['type']==='telephonic') 📞 Telephonic
-                        @elseif($act['type']==='field')  🏥 Field Visit
-                        @elseif($act['type']==='live')   ⚡ Live Audit
-                        @else                            🏛 Infra Audit
-                        @endif
-                        @if(!empty($act['patient_name']))  · <span class="font-medium">{{ $act['patient_name'] }}</span>@endif
-                        @if(!empty($act['hospital_name'])) · {{ $act['hospital_name'] }}@endif
+            @php
+                $dotClr = $act['type']==='telephonic' ? '#06b6d4'
+                        : ($act['type']==='field'      ? '#f59e0b'
+                        : ($act['type']==='live'        ? '#8b5cf6' : '#f43f5e'));
+                $typeLabel = match($act['type']) {
+                    'telephonic' => '📞 Telephonic',
+                    'field'      => '🏥 Field Visit',
+                    'live'       => '⚡ Live Audit',
+                    default      => '🏛 Infra Audit',
+                };
+            @endphp
+            <div class="feed-row">
+                <div class="feed-dot" style="background:{{ $dotClr }};"></div>
+                <div style="flex:1; min-width:0;">
+                    <p style="font-size:12.5px; font-weight:600; color:var(--ink); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ $act['dmo_name'] }}</p>
+                    <p style="font-size:11px; color:var(--slate-mid); margin:2px 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        {{ $typeLabel }}
+                        @if(!empty($act['patient_name'])) · {{ $act['patient_name'] }} @endif
+                        @if(!empty($act['hospital_name'])) · {{ $act['hospital_name'] }} @endif
                     </p>
                 </div>
-                <span class="text-[10px] text-slate-400 shrink-0 mt-0.5">{{ $act['created_at']->diffForHumans() }}</span>
+                <span style="font-size:10px; color:var(--slate-mid); flex-shrink:0; margin-top:2px;">{{ $act['created_at']->diffForHumans() }}</span>
             </div>
             @endforeach
         </div>
     </div>
 
-    <div class="chart-card">
-        <div class="flex items-center justify-between mb-5">
-            <div>
-                <p class="sec-head">Most Audited Hospitals</p>
-                <p class="text-xs text-slate-400 mt-0.5">By total audit volume this period</p>
-            </div>
+    <div class="card" style="padding:22px;">
+        <div style="margin-bottom:16px;">
+            <div class="sec-head">Most Audited Hospitals</div>
+            <div class="sec-sub">By total volume this period</div>
         </div>
-        <div class="space-y-3">
+        <div style="display:flex; flex-direction:column; gap:11px;">
             @foreach($topHospitals as $idx => $hosp)
-            @php $maxCount = $topHospitals->first()['count']; @endphp
+            @php $maxCount = $topHospitals->first()['count'];
+                 $gradients = ['#06b6d4,#0ea5e9','#f59e0b,#f97316','#8b5cf6,#6366f1','#10b981,#14b8a6','#f43f5e,#fb7185','#0ea5e9,#38bdf8','#a16207,#d97706'];
+            @endphp
             <div>
-                <div class="flex items-center justify-between mb-1">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span class="text-xs font-black text-slate-300 w-5 shrink-0">{{ $idx+1 }}</span>
-                        <span class="text-sm font-semibold text-slate-700 truncate">{{ $hosp['name'] }}</span>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:5px;">
+                    <div style="display:flex; align-items:center; gap:7px; min-width:0;">
+                        <span style="font-size:10px; font-weight:800; color:#c8d0de; width:16px; flex-shrink:0;">{{ $idx+1 }}</span>
+                        <span style="font-size:12.5px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ $hosp['name'] }}</span>
                     </div>
-                    <span class="text-xs font-bold text-slate-800 shrink-0 ml-2">{{ number_format($hosp['count']) }}</span>
+                    <span style="font-size:12px; font-weight:700; color:var(--ink); flex-shrink:0; margin-left:8px;">{{ number_format($hosp['count']) }}</span>
                 </div>
-                <div class="h-2 bg-slate-100 rounded-full overflow-hidden ml-7">
-                    <div class="h-full rounded-full"
-                         style="width:{{ $maxCount>0 ? round($hosp['count']/$maxCount*100) : 0 }}%;
-                                background:linear-gradient(90deg,{{ ['#06b6d4','#f59e0b','#8b5cf6','#10b981','#f43f5e','#0ea5e9','#a16207'][$idx%7] }},{{ ['#0ea5e9','#f97316','#6366f1','#14b8a6','#e11d48','#38bdf8','#d97706'][$idx%7] }});">
-                    </div>
+                <div class="pbar-track" style="margin-left:23px; height:6px;">
+                    <div class="hosp-bar" style="width:{{ $maxCount>0 ? round($hosp['count']/$maxCount*100) : 0 }}%; background:linear-gradient(90deg,{{ $gradients[$idx%7] }});"></div>
                 </div>
             </div>
             @endforeach
@@ -442,109 +503,96 @@
     </div>
 </div>
 
-<div id="toast-container" style="position:fixed;top:1.25rem;right:1.25rem;z-index:9999;display:flex;flex-direction:column;gap:.625rem;pointer-events:none;max-width:min(420px,calc(100vw - 2.5rem));"></div>
+{{-- Toast container --}}
+<div id="toast-container" style="position:fixed; top:16px; right:16px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; max-width:min(380px,calc(100vw - 32px));"></div>
 
 @endsection
 
 @section('pageJs')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-Chart.defaults.font.family = "'DM Sans', sans-serif";
-Chart.defaults.color       = '#94a3b8';
+Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+Chart.defaults.font.size   = 11;
+Chart.defaults.color       = '#8c96ab';
 
-/* 1. Activity Timeline — 4 series */
-(function () {
+/* Activity Timeline */
+(function(){
     const ctx = document.getElementById('activityChart').getContext('2d');
-    const mk  = (r,g,b) => { const gr=ctx.createLinearGradient(0,0,0,200); gr.addColorStop(0,`rgba(${r},${g},${b},.22)`); gr.addColorStop(1,`rgba(${r},${g},${b},0)`); return gr; };
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: @json($chartDates),
-            datasets: [
-                { label:'Telephonic', data:@json($chartTele),  borderColor:'#06b6d4', backgroundColor:mk(6,182,212),   tension:.4,fill:true,pointRadius:0,pointHoverRadius:5,borderWidth:2.5 },
-                { label:'Field',      data:@json($chartField), borderColor:'#f59e0b', backgroundColor:mk(245,158,11),  tension:.4,fill:true,pointRadius:0,pointHoverRadius:5,borderWidth:2.5 },
-                { label:'Live',       data:@json($chartLive),  borderColor:'#8b5cf6', backgroundColor:mk(139,92,246),  tension:.4,fill:true,pointRadius:0,pointHoverRadius:5,borderWidth:2.5 },
-                { label:'Infra',      data:@json($chartInfra), borderColor:'#f43f5e', backgroundColor:mk(244,63,94),   tension:.4,fill:true,pointRadius:0,pointHoverRadius:5,borderWidth:2.5 },
+    const mk  = (r,g,b) => { const g2=ctx.createLinearGradient(0,0,0,190); g2.addColorStop(0,`rgba(${r},${g},${b},.18)`); g2.addColorStop(1,`rgba(${r},${g},${b},0)`); return g2; };
+    new Chart(ctx,{
+        type:'line',
+        data:{
+            labels:@json($chartDates),
+            datasets:[
+                {label:'Telephonic',data:@json($chartTele), borderColor:'#06b6d4',backgroundColor:mk(6,182,212),  tension:.4,fill:true,pointRadius:0,pointHoverRadius:4,borderWidth:2},
+                {label:'Field',     data:@json($chartField),borderColor:'#f59e0b',backgroundColor:mk(245,158,11), tension:.4,fill:true,pointRadius:0,pointHoverRadius:4,borderWidth:2},
+                {label:'Live',      data:@json($chartLive), borderColor:'#8b5cf6',backgroundColor:mk(139,92,246), tension:.4,fill:true,pointRadius:0,pointHoverRadius:4,borderWidth:2},
+                {label:'Infra',     data:@json($chartInfra),borderColor:'#f43f5e',backgroundColor:mk(244,63,94),  tension:.4,fill:true,pointRadius:0,pointHoverRadius:4,borderWidth:2},
             ]
         },
-        options: {
-            responsive:true, interaction:{ mode:'index', intersect:false },
-            plugins:{ legend:{ display:false }, tooltip:{ backgroundColor:'#0f172a',titleColor:'#94a3b8',bodyColor:'#f1f5f9',padding:12,cornerRadius:10 } },
+        options:{
+            responsive:true,
+            interaction:{mode:'index',intersect:false},
+            plugins:{
+                legend:{display:false},
+                tooltip:{backgroundColor:'#0a0f1e',titleColor:'#8c96ab',bodyColor:'#f1f5f9',padding:10,cornerRadius:10,boxPadding:4}
+            },
             scales:{
-                x:{ grid:{ display:false }, ticks:{ maxTicksLimit:8, font:{ size:11 } } },
-                y:{ grid:{ color:'#f1f5f9' }, border:{ dash:[4,4] }, ticks:{ font:{ size:11 } } }
+                x:{grid:{display:false},ticks:{maxTicksLimit:8}},
+                y:{grid:{color:'#f0f3f8'},border:{dash:[3,3]}}
             }
         }
     });
 })();
 
-/* 2. Banner donut */
-(function () {
-    new Chart(document.getElementById('bannerDonut'), {
+/* Banner donut */
+(function(){
+    new Chart(document.getElementById('bannerDonut'),{
         type:'doughnut',
-        data:{ labels:['Passed','Failed','Not checked'], datasets:[{ data:[{{ $infra['banner_passed'] }},{{ $infra['banner_failed'] }},{{ $infra['banner_unchecked'] }}], backgroundColor:['#10b981','#f43f5e','#e2e8f0'], borderWidth:0, hoverOffset:4 }] },
-        options:{ cutout:'70%', responsive:true, plugins:{ legend:{ display:false }, tooltip:{ backgroundColor:'#0f172a', bodyColor:'#f1f5f9', padding:8, cornerRadius:8 } } }
+        data:{labels:['Passed','Failed','Unchecked'],datasets:[{data:[{{ $infra['banner_passed'] }},{{ $infra['banner_failed'] }},{{ $infra['banner_unchecked'] }}],backgroundColor:['#10b981','#f43f5e','#e2e8f0'],borderWidth:0,hoverOffset:3}]},
+        options:{cutout:'72%',responsive:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#0a0f1e',bodyColor:'#f1f5f9',padding:8,cornerRadius:8}}}
     });
 })();
 
-/* 3. Hygiene donut */
-(function () {
+/* Hygiene donut */
+(function(){
     const avg = {{ $infra['total'] - $infra['hygiene_good'] - $infra['hygiene_poor'] }};
-    new Chart(document.getElementById('hygieneDonut'), {
+    new Chart(document.getElementById('hygieneDonut'),{
         type:'doughnut',
-        data:{ labels:['Good','Average','Poor'], datasets:[{ data:[{{ $infra['hygiene_good'] }},avg,{{ $infra['hygiene_poor'] }}], backgroundColor:['#10b981','#fbbf24','#f43f5e'], borderWidth:0, hoverOffset:4 }] },
-        options:{ cutout:'70%', responsive:true, plugins:{ legend:{ display:false }, tooltip:{ backgroundColor:'#0f172a', bodyColor:'#f1f5f9', padding:8, cornerRadius:8 } } }
+        data:{labels:['Good','Average','Poor'],datasets:[{data:[{{ $infra['hygiene_good'] }},avg,{{ $infra['hygiene_poor'] }}],backgroundColor:['#10b981','#f59e0b','#f43f5e'],borderWidth:0,hoverOffset:3}]},
+        options:{cutout:'72%',responsive:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#0a0f1e',bodyColor:'#f1f5f9',padding:8,cornerRadius:8}}}
     });
 })();
 
-/* 4. District stacked bar — 4 series */
-(function () {
-    new Chart(document.getElementById('districtBar'), {
-        type:'bar',
-        data:{
-            labels: @json($districtLabels),
-            datasets:[
-                { label:'Telephonic', data:@json($districtTele),  backgroundColor:'#67e8f9', borderRadius:4 },
-                { label:'Field',      data:@json($districtField), backgroundColor:'#fcd34d', borderRadius:4 },
-                { label:'Live',       data:@json($districtLive),  backgroundColor:'#c4b5fd', borderRadius:4 }
-            ]
-        },
-        options:{
-            responsive:true,
-            plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, padding:16, font:{ size:11 } } }, tooltip:{ backgroundColor:'#0f172a', bodyColor:'#f1f5f9', cornerRadius:8, padding:10 } },
-            scales:{ x:{ stacked:true, grid:{ display:false }, ticks:{ font:{ size:11 } } }, y:{ stacked:true, grid:{ color:'#f1f5f9' }, border:{ dash:[4,4] }, ticks:{ font:{ size:11 } } } }
-        }
-    });
-})();
-
-/* 5. DMO table search + sort (infra column included) */
-(function () {
+/* DMO table search + sort */
+(function(){
     const tbody  = document.getElementById('dmo-table-body');
     const search = document.getElementById('dmo-search');
     const sortSel= document.getElementById('sort-select');
-    function filterSort() {
+    function filterSort(){
         const q  = search.value.toLowerCase();
         const key= sortSel.value;
-        [...tbody.querySelectorAll('.dmo-row')]
-            .filter(r => r.dataset.name!==undefined)
+        [...tbody.querySelectorAll('.dmo-grid')]
+            .filter(r => r.dataset.name !== undefined)
             .sort((a,b) => +b.dataset[key] - +a.dataset[key])
-            .forEach(r => { r.style.display=r.dataset.name.includes(q)?'':'none'; tbody.appendChild(r); });
+            .forEach(r => { r.style.display = r.dataset.name.includes(q) ? '' : 'none'; tbody.appendChild(r); });
     }
     search.addEventListener('input', filterSort);
     sortSel.addEventListener('change', filterSort);
 })();
 
-/* 6. Toast */
+/* Toast */
 function toast(type,title,msg,dur){
     dur=dur??4500;
-    const icons={success:'fa-check-circle',error:'fa-times-circle',info:'fa-info-circle'};
-    const colors={success:'rgba(240,253,244,.97)',error:'rgba(255,241,242,.97)',info:'rgba(239,246,255,.97)'};
+    const colors={success:'#f0fdf4',error:'#fff1f2',info:'#eff6ff'};
+    const icons ={success:'fa-check-circle',error:'fa-times-circle',info:'fa-info-circle'};
+    const iconClrs={success:'#10b981',error:'#f43f5e',info:'#0ea5e9'};
     const el=document.createElement('div');
-    el.style.cssText=`pointer-events:auto;display:flex;align-items:flex-start;gap:.75rem;padding:.875rem 1rem;border-radius:.875rem;background:${colors[type]};box-shadow:0 8px 24px rgba(0,0,0,.14);font-size:.8125rem;transform:translateX(120%);opacity:0;transition:transform .32s cubic-bezier(.22,1,.36,1),opacity .28s;position:relative;overflow:hidden;`;
-    el.innerHTML=`<i class="fas ${icons[type]??'fa-info-circle'}" style="margin-top:.15rem;flex-shrink:0;"></i><div><strong style="display:block;font-size:.8125rem;margin-bottom:.1rem;">${title}</strong>${msg}</div><button onclick="this.closest('div').remove()" style="margin-left:auto;background:none;border:none;cursor:pointer;opacity:.5;font-size:.75rem;"><i class="fas fa-times"></i></button>`;
+    el.style.cssText=`pointer-events:auto;display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:14px;background:${colors[type]};box-shadow:0 8px 28px rgba(10,15,30,.14);font-size:12.5px;transform:translateX(110%);opacity:0;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .25s;border:1px solid rgba(0,0,0,.06);`;
+    el.innerHTML=`<i class="fas ${icons[type]??'fa-info-circle'}" style="color:${iconClrs[type]};margin-top:1px;flex-shrink:0;"></i><div><strong style="display:block;font-size:12px;margin-bottom:2px;">${title}</strong><span style="color:#64748b;">${msg}</span></div><button onclick="this.parentElement.remove()" style="margin-left:auto;background:none;border:none;cursor:pointer;opacity:.4;font-size:11px;padding:0;"><i class="fas fa-times"></i></button>`;
     document.getElementById('toast-container').appendChild(el);
     requestAnimationFrame(()=>requestAnimationFrame(()=>{el.style.transform='translateX(0)';el.style.opacity='1';}));
-    setTimeout(()=>{el.style.transform='translateX(120%)';el.style.opacity='0';setTimeout(()=>el.remove(),300);},dur);
+    setTimeout(()=>{el.style.transform='translateX(110%)';el.style.opacity='0';setTimeout(()=>el.remove(),300);},dur);
 }
 @if(session('success')) toast('success','Success','{{ session("success") }}'); @endif
 @if(session('error'))   toast('error','Error','{{ session("error") }}');       @endif

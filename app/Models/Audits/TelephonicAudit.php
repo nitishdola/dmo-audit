@@ -2,7 +2,7 @@
 namespace App\Models\Audits;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\PmjayAudit;
+use App\Models\PmjayTreatment;
 use App\Models\AuditConclusion;
 use App\Models\User;
 
@@ -10,14 +10,14 @@ class TelephonicAudit extends Model
 {
     protected $fillable = [
         'submitted_by',
-        'pmjay_audit_id',
+        'pmjay_treatment_id',
         'observation',
         'audit_conclusion_id'
     ];
 
-    public function pmjay_audit()
+    public function pmjay_treatment()
     {
-        return $this->belongsTo(PmjayAudit::class, 'pmjay_audit_id');
+        return $this->belongsTo(PmjayTreatment::class, 'pmjay_treatment_id');
     }
 
     public function audit_conclusion()
@@ -29,4 +29,5 @@ class TelephonicAudit extends Model
     {
         return $this->belongsTo(User::class,'submitted_by');
     }
+    
 }

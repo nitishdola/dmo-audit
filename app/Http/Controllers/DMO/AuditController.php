@@ -5,34 +5,66 @@ namespace App\Http\Controllers\DMO;
 use App\Http\Controllers\Controller;
 
 use Illuminate\Http\Request;
-use App\Models\PmjayAudit;
+use App\Models\PmjayTreatment;
 use App\Models\AuditConclusion;
 use App\Models\Audits\TelephonicAudit;
 use App\Models\Audits\FieldVisit;
 use App\Models\Audits\FieldVisitAttachment;
 use Illuminate\Support\Facades\DB;
+use App\Models\PmjayAudit;
 
 class AuditController extends Controller
 {
-    public function telephonicAudits(Request $request)
-    {
-        $status = $request->status;
-        $query = PmjayAudit::with('treatment', 'treatment.hospital')
-                ->where('assigned_to', auth()->id())
-                ->where('audit_type', 'telephonic');
 
-        if ($status) {
-            $query->where('status', $status);
+    public function viewAllAudits(Request $request)
+    {
+        $query = PmjayTreatment::with('hospital.district');
+
+        if ($request->filled('registration_id')) {
+            $query->where('registration_id', 'like', '%' . $request->registration_id . '%');
         }
 
-        $audits = $query->latest()->paginate(1000); 
+        if ($request->filled('member_id')) {
+            $query->where('ben_mobile_no', 'like', '%' . $request->member_id . '%');
+        }
 
-        $completed = PmjayAudit::where('assigned_to', auth()->id())->where('audit_type', 'telephonic')->where('status', 'completed')->count();
-        $pending = PmjayAudit::where('assigned_to', auth()->id())->where('audit_type', 'telephonic')->where('status', 'pending')->count();
-        $all = PmjayAudit::where('assigned_to', auth()->id())->where('audit_type', 'telephonic')->count();
+        if ($request->filled('hospital_id')) {
+            $query->where('hospital_id', $request->hospital_id);
+        }
 
+        // Filter by hospital's district via relationship, since pmjay_treatments has no district column of its own
+        if ($request->filled('district_id')) {
+            $query->whereHas('hospital', function ($q) use ($request) {
+                $q->where('district_id', $request->district_id);
+            });
+        }
 
-        return view('dmo.audits.telephonic.telephonic', compact('audits', 'status', 'completed', 'pending', 'all'));
+        if ($request->filled('preauth_date_from')) {
+            $query->whereDate('preauth_init_date', '>=', $request->preauth_date_from);
+        }
+
+        if ($request->filled('preauth_date_to')) {
+            $query->whereDate('preauth_init_date', '<=', $request->preauth_date_to);
+        }
+
+        $audits = $query->latest()->paginate(100)->withQueryString();
+
+        $hospitals = \App\Models\Hospital::orderBy('name')->get();
+        $districts = \App\Models\District::orderBy('name')->get();
+
+        return view('dmo.audits.view_all_audits', compact('audits', 'hospitals', 'districts'));
+    }
+
+    public function viewAudit($id) { 
+        $audit = PmjayTreatment::with('hospital', 'patientDistrict')->where('id', $id)->firstOrFail(); 
+        return view('dmo.audits.view_audit', compact('audit'));
+    }
+
+    public function telephonicAudits(Request $request)
+    {
+        $query = PmjayTreatment::with('hospital');
+        $audits = $query->latest()->paginate(1000);
+        return view('dmo.audits.telephonic.telephonic', compact('audits'));
     }
 
     public function telephonicAuditForm(Request $request, $id)

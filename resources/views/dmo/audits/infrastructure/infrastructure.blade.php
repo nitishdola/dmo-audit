@@ -282,6 +282,41 @@
         </div>
         @error('banner_photo')<p class="text-rose-500 text-xs mt-1">{{ $message }}</p>@enderror
 
+        {{-- Additional Files --}}
+        <div class="section-badge"><span>Additional Files (If Any)</span></div>
+
+        <div class="obs-card">
+            <div class="obs-top mb-3">
+                <div>
+                    <div class="obs-label flex items-center gap-2">
+                        <i class="fas fa-paperclip text-slate-600"></i>
+                        Additional Files (If Any)
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">Upload any supporting documents or photos. Enter a descriptive name for each file.</p>
+                </div>
+            </div>
+
+            <div id="additional-files-list">
+                <div class="additional-file-row" style="display:grid;grid-template-columns:1fr 1fr auto;gap:.75rem;align-items:center;margin-bottom:.625rem;">
+                    <input type="text" name="additional_file_names[]"
+                           placeholder="File name / description"
+                           class="field-input" style="font-size:.82rem;" />
+                    <input type="file" name="additional_files[]"
+                           class="field-input" style="font-size:.82rem;padding:.45rem .75rem;" />
+                    <button type="button" class="remove-file-row"
+                            style="color:#e11d48;background:none;border:none;cursor:pointer;font-size:1rem;padding:.25rem .4rem;border-radius:.5rem;flex-shrink:0;"
+                            title="Remove row">
+                        <i class="fas fa-times-circle"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="button" id="add-more-files"
+                    style="display:inline-flex;align-items:center;gap:.4rem;margin-top:.25rem;font-size:.78rem;font-weight:600;color:#059669;background:none;border:none;cursor:pointer;padding:.3rem .5rem;border-radius:.5rem;transition:color .15s;">
+                <i class="fas fa-plus-circle"></i> Add More Files
+            </button>
+        </div>
+
         {{-- PMAM Kiosk --}}
         <div class="section-badge"><span>PMAM Kiosk &amp; Boards</span></div>
         @include('dmo.audits.infrastructure.infra-yn-row',     ['num'=>11, 'label'=>'Availability of PMAM Kiosk',            'name'=>'pmam_kiosk_available'])
@@ -602,6 +637,46 @@ function toast(type, title, message, duration) {
 @if($errors->any())
 toast('error', 'Validation Errors', '{{ $errors->first() }}');
 @endif
+
+/* ── Additional Files – add / remove rows ───────────────────── */
+(function () {
+    const list = document.getElementById('additional-files-list');
+
+    function makeRow() {
+        const row = document.createElement('div');
+        row.className = 'additional-file-row';
+        row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr auto;gap:.75rem;align-items:center;margin-bottom:.625rem;';
+        row.innerHTML = `
+            <input type="text" name="additional_file_names[]"
+                   placeholder="File name / description"
+                   class="field-input" style="font-size:.82rem;" />
+            <input type="file" name="additional_files[]"
+                   class="field-input" style="font-size:.82rem;padding:.45rem .75rem;" />
+            <button type="button" class="remove-file-row"
+                    style="color:#e11d48;background:none;border:none;cursor:pointer;font-size:1rem;padding:.25rem .4rem;border-radius:.5rem;flex-shrink:0;"
+                    title="Remove row">
+                <i class="fas fa-times-circle"></i>
+            </button>`;
+        return row;
+    }
+
+    document.getElementById('add-more-files').addEventListener('click', function () {
+        list.appendChild(makeRow());
+    });
+
+    list.addEventListener('click', function (e) {
+        const btn = e.target.closest('.remove-file-row');
+        if (!btn) return;
+        const rows = list.querySelectorAll('.additional-file-row');
+        if (rows.length > 1) {
+            btn.closest('.additional-file-row').remove();
+        } else {
+            // Keep at least one row; just clear its values
+            const row = btn.closest('.additional-file-row');
+            row.querySelectorAll('input').forEach(i => i.value = '');
+        }
+    });
+})();
 </script>
 
 @endsection

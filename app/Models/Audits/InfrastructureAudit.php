@@ -63,6 +63,10 @@ class InfrastructureAudit extends Model
         'overall_hygiene',           'overall_hygiene_remarks',
         'infra_other_remarks',
 
+        // Additional files
+        'additional_file_paths',
+        'additional_file_names',
+
         // C. Human Resource
         'pmam_available',            'pmam_available_remarks',
         'onduty_doctors',            'onduty_doctor_types',       'onduty_doctors_remarks',
@@ -79,9 +83,11 @@ class InfrastructureAudit extends Model
         'ai_banner_pass'      => 'boolean',
         'ai_pmjay_branding'   => 'boolean',
         'ai_banner_visible'   => 'boolean',
-        'icu_equipment'       => 'array',   // {A:'Yes', B:'No', ...}
-        'ot_equipment'        => 'array',   // {A:'Yes', B:'No', ...}
-        'onduty_doctor_types' => 'array',   // {A:'Yes', B:'No', C:'NA'}
+        'icu_equipment'         => 'array',
+        'ot_equipment'          => 'array',
+        'onduty_doctor_types'   => 'array',
+        'additional_file_paths' => 'array',
+        'additional_file_names' => 'array',
     ];
 
     // ── Relationships ──────────────────────────────────────────────────────
@@ -108,6 +114,14 @@ class InfrastructureAudit extends Model
         return $this->banner_photo_path
             ? asset('storage/' . $this->banner_photo_path)
             : null;
+    }
+
+    /** Public storage URLs for all additional uploaded files. */
+    public function getAdditionalFilesUrlsAttribute(): array
+    {
+        return collect($this->additional_file_paths ?? [])
+            ->map(fn ($path) => asset('storage/' . $path))
+            ->toArray();
     }
 
     // ── Scopes ─────────────────────────────────────────────────────────────

@@ -8,10 +8,18 @@ use App\Models\PmjayAudit;
 use App\Models\LiveAudit;
 use App\Models\Audits\InfrastructureAudit;
 use Illuminate\View\View;
+use Carbon\Carbon;
+use App\Models\PmjayTreatment;
 class DmoDashboardController extends Controller
 {
     public function index(): View
     {
+
+        $startOfLastMonth = Carbon::now()->subMonth()->startOfMonth();
+        $endOfLastMonth = Carbon::now()->subMonth()->endOfMonth();
+
+        $total_beneficiaries = PmjayTreatment::whereBetween('preauth_init_date', [$startOfLastMonth, $endOfLastMonth])->count();
+
         $userId = auth()->id();
 
         // ── Single query: all assignment/completion counts for this DMO ──────
@@ -44,6 +52,7 @@ class DmoDashboardController extends Controller
         $infrastructureAudits = InfrastructureAudit::where('submitted_by', $userId)->count();
 
         return view('dmo.dashboard', [
+            'total_beneficiaries'  => (int) ($total_beneficiaries ?? 0),
             'total_assigned'       => (int) ($counts->total_assigned       ?? 0),
             'total_completed'      => (int) ($counts->total_completed      ?? 0),
 

@@ -56,6 +56,8 @@ class InfrastructureAuditController extends Controller
         $infraAudit = $this->service->store(
             $request->validated(),
             $request->file('banner_photo'),
+            $request->file('additional_files', []),
+            $request->input('additional_file_names', []),
         );
 
         return redirect()
@@ -102,6 +104,8 @@ class InfrastructureAuditController extends Controller
             $infraAudit,
             $request->validated(),
             $request->file('banner_photo'),
+            $request->file('additional_files', []),
+            $request->input('additional_file_names', []),
         );
 
         return redirect()

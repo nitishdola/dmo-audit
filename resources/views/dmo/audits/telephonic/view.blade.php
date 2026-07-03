@@ -4,7 +4,7 @@
 <div class="flex items-center gap-2 text-sm text-slate-400 mb-5">
             <a href="{{ route('dmo.audits.telephonic.all') }}" class="hover:text-emerald-600"><i class="fas fa-arrow-left mr-1 text-xs"></i> Back to audits</a>
             <span class="text-slate-300">/</span>
-            <span class="text-slate-600">New observation</span>
+            <span class="text-slate-600">Telephonic Audit</span>
         </div>
 
         <!-- page heading -->
@@ -13,7 +13,7 @@
                 <i class="fas fa-clipboard-check text-emerald-600"></i>
                 Record audit observation
             </h2>
-            <p class="text-sm text-slate-500 mt-1">Case details & conclusion · PMJAY Assam pre‑authorisation audit</p>
+            
         </div>
 @endsection
 @section('main_content') 
@@ -24,18 +24,18 @@
             </div>
             <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-5 gap-x-8 text-sm">
                 <!-- left column group (using flex to pair label:value) -->
-                <div><span class="text-slate-400 text-xs block">Registration ID</span><span class="font-medium text-slate-800">{{ $audit->treatment->registration_id }}</span></div>
-                <div><span class="text-slate-400 text-xs block">Case ID</span><span class="font-medium text-slate-800">{{ $audit->treatment->case_id }}</span></div>
-                <div><span class="text-slate-400 text-xs block">Patient name</span><span class="font-medium text-slate-800">{{ $audit->treatment->patient_name }}</span></div>
-                <div><span class="text-slate-400 text-xs block">Mobile number</span><span class="font-medium text-slate-800">{{ $audit->treatment->ben_mobile_no }}</span></div>
-                <div><span class="text-slate-400 text-xs block">PMJAY ID (ABHA)</span><span class="font-medium text-slate-800">4{{ $audit->treatment->member_id }}</span></div>
-                <div><span class="text-slate-400 text-xs block">Hospital name</span><span class="font-medium text-slate-800">{{ $audit->treatment->hospital->name }}</span></div>
-                <div><span class="text-slate-400 text-xs block">District</span><span class="font-medium text-slate-800">{{ $audit->district->name }}</span></div>
-                <div><span class="text-slate-400 text-xs block">Policy / scheme</span><span class="font-medium text-slate-800">{{ $audit->treatment->policy_code }}</span></div>
-                <div><span class="text-slate-400 text-xs block">Preauth date</span><span class="font-medium text-slate-800">{{ $audit->treatment->preauth_init_date }}</span></div>
-                <div><span class="text-slate-400 text-xs block">Procedure details</span><span class="font-medium text-slate-800">{{ $audit->treatment->procedure_details }}</span></div>
-                <div><span class="text-slate-400 text-xs block">Category details</span><span class="font-medium text-slate-800">{{ $audit->treatment->category_details }}</span></div>
-                <div><span class="text-slate-400 text-xs block">Preauth amount approved</span><span class="font-medium text-slate-800">₹ {{ $audit->treatment->amount_preauth_approved }}</span></div>
+                <div><span class="text-slate-400 text-xs block">Registration ID</span><span class="font-medium text-slate-800">{{ $audit->registration_id }}</span></div>
+                <div><span class="text-slate-400 text-xs block">Case ID</span><span class="font-medium text-slate-800">{{ $audit->case_id }}</span></div>
+                <div><span class="text-slate-400 text-xs block">Patient name</span><span class="font-medium text-slate-800">{{ $audit->patient_name }}</span></div>
+                <div><span class="text-slate-400 text-xs block">Mobile number</span><span class="font-medium text-slate-800">{{ $audit->ben_mobile_no }}</span></div>
+                <div><span class="text-slate-400 text-xs block">PMJAY ID (ABHA)</span><span class="font-medium text-slate-800">4{{ $audit->member_id }}</span></div>
+                <div><span class="text-slate-400 text-xs block">Hospital name</span><span class="font-medium text-slate-800">{{ $audit->hospital->name }}</span></div>
+                <div><span class="text-slate-400 text-xs block">District</span><span class="font-medium text-slate-800">{{ $audit->patientDistrict->name }}</span></div>
+                <div><span class="text-slate-400 text-xs block">Policy / scheme</span><span class="font-medium text-slate-800">{{ $audit->policy_code }}</span></div>
+                <div><span class="text-slate-400 text-xs block">Preauth date</span><span class="font-medium text-slate-800">{{ $audit->preauth_init_date }}</span></div>
+                <div><span class="text-slate-400 text-xs block">Procedure details</span><span class="font-medium text-slate-800">{{ $audit->procedure_details }}</span></div>
+                <div><span class="text-slate-400 text-xs block">Category details</span><span class="font-medium text-slate-800">{{ $audit->category_details }}</span></div>
+                <div><span class="text-slate-400 text-xs block">Preauth amount approved</span><span class="font-medium text-slate-800">₹ {{ $audit->amount_preauth_approved }}</span></div>
             </div>
         </div>
 
@@ -63,6 +63,7 @@
                 Audit observation & conclusion
             </h3>
 
+            
             
             <form class="space-y-7" method="POST" action="{{ route('dmo.audits.telephonic.store', $audit->id) }}">
                 @csrf

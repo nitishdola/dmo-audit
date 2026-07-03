@@ -5,16 +5,16 @@
 <div class="flex items-center gap-2 text-sm text-slate-400 mb-5">
             <a href="{{ route('dmo.dashboard') }}" class="hover:text-emerald-600"><i class="fas fa-arrow-left mr-1 text-xs"></i> Back to Dashboard</a>
             <span class="text-slate-300">/</span>
-            <span class="text-slate-600">Medical Audit Assigned</span>
+            <span class="text-slate-600">Fields Visits Assigned</span>
         </div>
 
 <div class="flex flex-wrap items-center justify-between gap-4 mb-7">
             <div>
                 <h2 class="text-2xl md:text-3xl font-semibold text-slate-800 tracking-tight flex items-center gap-2">
                     <i class="fa-solid fa-hospital-user text-red-600 text-2xl"></i>
-                    Medical Audit Assigned
+                    Fields Visits Assigned
                 </h2>
-                <p class="text-sm text-slate-500 mt-1">Detailed list of Medical Audit Assigned</p>
+                <p class="text-sm text-slate-500 mt-1">Detailed list of Fields Visits Assigned</p>
             </div>
             
         </div>
@@ -24,9 +24,15 @@
         <!-- filter bar (quick filter chips) -->
         <div class="flex flex-wrap items-center gap-3 mb-6">
             <span class="text-sm text-slate-400">Filter:</span>
-            <button class="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 text-xs px-4 py-2 rounded-full flex items-center gap-1 transition">All audits <span class="bg-slate-100 text-slate-600 ml-1 px-1.5 rounded-full text-[10px]">48</span></button>
-            <button class="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 text-xs px-4 py-2 rounded-full flex items-center gap-1">Pending <span class="bg-amber-100 text-amber-700 ml-1 px-1.5 rounded-full text-[10px]">12</span></button>
-            <button class="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 text-xs px-4 py-2 rounded-full flex items-center gap-1">Completed <span class="bg-emerald-100 text-emerald-700 ml-1 px-1.5 rounded-full text-[10px]">28</span></button>
+            <button class="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 text-xs px-4 py-2 rounded-full flex items-center gap-1 transition">All audits 
+                <!-- <span class="bg-slate-100 text-slate-600 ml-1 px-1.5 rounded-full text-[10px]">48</span> -->
+            </button>
+            <button class="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 text-xs px-4 py-2 rounded-full flex items-center gap-1">Pending 
+                <!-- <span class="bg-amber-100 text-amber-700 ml-1 px-1.5 rounded-full text-[10px]">12</span> -->
+            </button>
+            <button class="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 text-xs px-4 py-2 rounded-full flex items-center gap-1">Completed 
+                <!-- <span class="bg-emerald-100 text-emerald-700 ml-1 px-1.5 rounded-full text-[10px]">28</span> -->
+            </button>
             
             
         </div>

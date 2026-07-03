@@ -323,6 +323,58 @@
             @endif
         </div>
 
+        {{-- Additional Files --}}
+        @if(!empty($a->additional_file_paths))
+        <div class="chart-card">
+            <p class="sec-head mb-4"><i class="fas fa-paperclip text-amber-500 mr-2"></i>Additional Files</p>
+            @php
+                $filePaths = $a->additional_file_paths ?? [];
+                $fileNames = $a->additional_file_names ?? [];
+                $fileUrls  = $a->additional_files_urls ?? [];
+                $imageExts = ['jpg','jpeg','png','gif','webp'];
+            @endphp
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                @foreach($filePaths as $i => $path)
+                @php
+                    $name = $fileNames[$i] ?? basename($path);
+                    $url  = $fileUrls[$i] ?? asset('storage/' . $path);
+                    $ext  = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                    $isImage = in_array($ext, $imageExts);
+                @endphp
+                <div class="ro-cell flex flex-col gap-2">
+                    @if($isImage)
+                        <a href="{{ $url }}" target="_blank" class="block rounded-lg overflow-hidden border border-slate-200 hover:border-rose-300 transition">
+                            <img src="{{ $url }}" alt="{{ $name }}" class="w-full h-32 object-cover">
+                        </a>
+                    @else
+                        <a href="{{ $url }}" target="_blank"
+                           class="flex items-center justify-center h-32 rounded-lg border border-slate-200 hover:border-rose-300 bg-slate-50 transition">
+                            @php
+                                $icon = match($ext) {
+                                    'pdf'           => 'fa-file-pdf text-rose-500',
+                                    'doc','docx'    => 'fa-file-word text-blue-500',
+                                    'xls','xlsx'    => 'fa-file-excel text-emerald-500',
+                                    'ppt','pptx'    => 'fa-file-powerpoint text-orange-500',
+                                    default         => 'fa-file text-slate-400',
+                                };
+                            @endphp
+                            <i class="fas {{ $icon }} text-4xl"></i>
+                        </a>
+                    @endif
+                    <div class="flex items-center justify-between gap-1">
+                        <span class="text-xs text-slate-600 truncate font-medium" title="{{ $name }}">{{ $name }}</span>
+                        <a href="{{ $url }}" target="_blank" download
+                           class="shrink-0 text-slate-400 hover:text-rose-500 transition text-xs"
+                           title="Download">
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
         {{-- C. Human Resource --}}
         <div class="chart-card">
             <p class="sec-head mb-4"><i class="fas fa-user-doctor text-violet-500 mr-2"></i>C. Human Resource</p>
